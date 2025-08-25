@@ -11,15 +11,15 @@ import os
 # Streamlit 페이지 설정: 넓은 레이아웃
 st.set_page_config(layout="wide")
 
-# 한글 폰트 설정 (웹 환경 우선)
-font_path = '/usr/share/fonts/truetype/noto/NotoSansCJKkr-Regular.otf'  # Streamlit Cloud
+# 한글 폰트 설정 (Streamlit Cloud 전용)
+font_path = '/usr/share/fonts/truetype/noto/NotoSansCJKkr-Regular.otf'  # Streamlit Cloud 기본 폰트 경로
 if os.path.exists(font_path):
-    font = fm.FontProperties(fname=font_path)
+    fm.fontManager.addfont(font_path)  # 폰트 추가
     plt.rc('font', family='Noto Sans CJK KR')
     plt.rcParams['axes.unicode_minus'] = False  # 마이너스 기호 깨짐 방지
 else:
-    plt.rc('font', family='DejaVu Sans')  # 기본 폰트 대체
-    st.warning("한글 폰트(Noto Sans CJK KR)를 찾을 수 없습니다. DejaVu Sans를 사용합니다. 한글 표시가 제한될 수 있습니다.")
+    plt.rc('font', family='DejaVu Sans')  # 대체 폰트
+    st.warning("Streamlit Cloud에서 Noto Sans CJK KR 폰트를 찾을 수 없습니다. DejaVu Sans를 사용합니다. 한글 표시가 제한될 수 있습니다.")
 
 # Streamlit 앱 설정
 st.title("신한은행 테크핀 데이터 비교 (24.10~25.06)")
