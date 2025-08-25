@@ -10,6 +10,7 @@ import plotly.express as px
 import os
 import numpy as np
 import shutil
+from data import create_sample_data  # 데이터 임포트
 
 # Streamlit 페이지 설정: 넓은 레이아웃
 st.set_page_config(layout="wide")
@@ -20,12 +21,15 @@ if os.path.exists(cache_dir):
     shutil.rmtree(cache_dir)
     st.write(f"디버깅: matplotlib 캐시 디렉토리 {cache_dir} 삭제 완료")
 
-# 한글 폰트 설정
+# 한글 폰트 설정 (윈도우 및 Streamlit Cloud 호환)
 font_paths = [
-    '/usr/share/fonts/truetype/noto/NotoSansCJKkr-Regular.otf',  # Noto Sans CJK KR
-    '/usr/share/fonts/truetype/noto/NotoSansKR-Regular.otf',     # Noto Sans KR
-    '/usr/share/fonts/truetype/nanum/NanumGothic.ttf',           # NanumGothic
-    '/usr/share/fonts/truetype/nanum/NanumBarunGothic.ttf'       # NanumBarunGothic
+    'C:/Windows/Fonts/NotoSansKR-Regular.ttf',  # 윈도우: Noto Sans KR
+    'C:/Windows/Fonts/NanumGothic.ttf',         # 윈도우: NanumGothic
+    'C:/Windows/Fonts/malgun.ttf',              # 윈도우: Malgun Gothic
+    '/usr/share/fonts/truetype/noto/NotoSansCJKkr-Regular.otf',  # Linux: Noto Sans CJK KR
+    '/usr/share/fonts/truetype/noto/NotoSansKR-Regular.otf',     # Linux: Noto Sans KR
+    '/usr/share/fonts/truetype/nanum/NanumGothic.ttf',           # Linux: NanumGothic
+    '/usr/share/fonts/truetype/nanum/NanumBarunGothic.ttf'       # Linux: NanumBarunGothic
 ]
 font_name = None
 for path in font_paths:
@@ -37,8 +41,8 @@ for path in font_paths:
         st.write(f"디버깅: 폰트 {font_name} ({path}) 적용")
         break
 
-# fc-list로 한글 폰트 동적 탐지
-if font_name is None:
+# fc-list로 한글 폰트 동적 탐지 (Linux)
+if font_name is None and os.name != 'nt':
     try:
         font_list = os.popen('fc-list :lang=ko').read().splitlines()
         st.write(f"디버깅: fc-list 한글 폰트 목록: {font_list[:10]}")  # 상위 10개 출력
@@ -57,15 +61,15 @@ if font_name is None:
 # 폰트 디버깅 정보 출력
 if font_name is None:
     available_fonts = [f.name for f in fm.fontManager.ttflist]
-    st.write(f"디버깅: matplotlib 사용 가능 폰트 목록: {available_fonts[:20]}")  # 상위 20개 출력
-    st.warning("한글 폰트를 찾을 수 없습니다. 기본 폰트(DejaVu Sans)를 사용합니다. 한글 표시가 제한될 수 있습니다.")
-    plt.rc('font', family='DejaVu Sans')
+    st.write(f"디버깅: matplotlib 사용 가능 폰트 목록: {available_fonts[:20]}")
+    st.warning("한글 폰트를 찾을 수 없습니다. 윈도우는 Malgun Gothic, Linux는 DejaVu Sans 사용.")
+    plt.rc('font', family='Malgun Gothic' if os.name == 'nt' else 'DejaVu Sans')
 else:
     st.write(f"디버깅: 최종 선택된 폰트: {font_name}")
 
 # 시스템 폰트 디렉토리 확인
 try:
-    font_dir = '/usr/share/fonts/truetype/'
+    font_dir = 'C:/Windows/Fonts' if os.name == 'nt' else '/usr/share/fonts/truetype/'
     font_files = []
     for root, _, files in os.walk(font_dir):
         font_files.extend([os.path.join(root, f) for f in files if f.endswith(('.ttf', '.otf'))])
@@ -102,257 +106,69 @@ table th:nth-child(n+2), table td:nth-child(n+2) {
 </style>
 """, unsafe_allow_html=True)
 
-# 고정 데이터 생성
-def create_sample_data():
-    months = ["24.10", "24.11", "24.12", "25.01", "25.02", "25.03_1", "25.03_2", "25.04", "25.05", "25.06", "25.07"]
-    data = [
-        # 24.10
-        {"기준월": "24.10", "테이블": "Table 1", "법인사업자_중복제거X": 40206157, "개인사업자_중복제거X": 3679469, "총사업자_중복제거X": 43885626, "법인사업자_중복제거": 23436, "개인사업자_중복제거": 9116, "총사업자_중복제거": 32552},
-        {"기준월": "24.10", "테이블": "Table 2", "법인사업자_중복제거X": 60018796, "개인사업자_중복제거X": 7001853, "총사업자_중복제거X": 67020649, "법인사업자_중복제거": 23526, "개인사업자_중복제거": 9358, "총사업자_중복제거": 32884},
-        {"기준월": "24.10", "테이블": "Table 3", "법인사업자_중복제거X": 36445067, "개인사업자_중복제거X": 2246362, "총사업자_중복제거X": 38691429, "법인사업자_중복제거": 22190, "개인사업자_중복제거": 4763, "총사업자_중복제거": 26953},
-        {"기준월": "24.10", "테이블": "Table 4", "법인사업자_중복제거X": 41971015, "개인사업자_중복제거X": 3084062, "총사업자_중복제거X": 45055077, "법인사업자_중복제거": 23833, "개인사업자_중복제거": 6617, "총사업자_중복제거": 30450},
-        {"기준월": "24.10", "테이블": "Table 5", "법인사업자_중복제거X": 8202556, "개인사업자_중복제거X": 623315, "총사업자_중복제거X": 8825871, "법인사업자_중복제거": 23513, "개인사업자_중복제거": 5721, "총사업자_중복제거": 29234},
-        {"기준월": "24.10", "테이블": "Table 6", "법인사업자_중복제거X": 10529067, "개인사업자_중복제거X": 778668, "총사업자_중복제거X": 11307735, "법인사업자_중복제거": 25389, "개인사업자_중복제거": 7702, "총사업자_중복제거": 33091},
-        {"기준월": "24.10", "테이블": "Table 7", "법인사업자_중복제거X": 56328010, "개인사업자_중복제거X": 3961134, "총사업자_중복제거X": 60289144, "법인사업자_중복제거": 23627, "개인사업자_중복제거": 9581, "총사업자_중복제거": 33208},
-        # 24.11
-        {"기준월": "24.11", "테이블": "Table 1", "법인사업자_중복제거X": 14681473, "개인사업자_중복제거X": 1579326, "총사업자_중복제거X": 16260799, "법인사업자_중복제거": 19838, "개인사업자_중복제거": 7460, "총사업자_중복제거": 27298},
-        {"기준월": "24.11", "테이블": "Table 2", "법인사업자_중복제거X": 22781713, "개인사업자_중복제거X": 3131905, "총사업자_중복제거X": 25913618, "법인사업자_중복제거": 20283, "개인사업자_중복제거": 7919, "총사업자_중복제거": 28202},
-        {"기준월": "24.11", "테이블": "Table 3", "법인사업자_중복제거X": 13141634, "개인사업자_중복제거X": 958350, "총사업자_중복제거X": 14099984, "법인사업자_중복제거": 17889, "개인사업자_중복제거": 3637, "총사업자_중복제거": 21526},
-        {"기준월": "24.11", "테이블": "Table 4", "법인사업자_중복제거X": 14405063, "개인사업자_중복제거X": 1282885, "총사업자_중복제거X": 15687948, "법인사업자_중복제거": 19875, "개인사업자_중복제거": 4982, "총사업자_중복제거": 24857},
-        {"기준월": "24.11", "테이블": "Table 5", "법인사업자_중복제거X": 8651906, "개인사업자_중복제거X": 688696, "총사업자_중복제거X": 9340602, "법인사업자_중복제거": 24186, "개인사업자_중복제거": 6034, "총사업자_중복제거": 30220},
-        {"기준월": "24.11", "테이블": "Table 6", "법인사업자_중복제거X": 10859000, "개인사업자_중복제거X": 855934, "총사업자_중복제거X": 11714934, "법인사업자_중복제거": 25955, "개인사업자_중복제거": 8140, "총사업자_중복제거": 34095},
-        {"기준월": "24.11", "테이블": "Table 7", "법인사업자_중복제거X": 20765853, "개인사업자_중복제거X": 1639572, "총사업자_중복제거X": 22405425, "법인사업자_중복제거": 20162, "개인사업자_중복제거": 7962, "총사업자_중복제거": 28124},
-        # 24.12
-        {"기준월": "24.12", "테이블": "Table 1", "법인사업자_중복제거X": 3363616, "개인사업자_중복제거X": 283647, "총사업자_중복제거X": 3647263, "법인사업자_중복제거": 13317, "개인사업자_중복제거": 4368, "총사업자_중복제거": 17685},
-        {"기준월": "24.12", "테이블": "Table 2", "법인사업자_중복제거X": 5744069, "개인사업자_중복제거X": 626279, "총사업자_중복제거X": 6370348, "법인사업자_중복제거": 15086, "개인사업자_중복제거": 5019, "총사업자_중복제거": 20105},
-        {"기준월": "24.12", "테이블": "Table 3", "법인사업자_중복제거X": 1720980, "개인사업자_중복제거X": 108982, "총사업자_중복제거X": 1829962, "법인사업자_중복제거": 11217, "개인사업자_중복제거": 1655, "총사업자_중복제거": 12872},
-        {"기준월": "24.12", "테이블": "Table 4", "법인사업자_중복제거X": 2027021, "개인사업자_중복제거X": 174166, "총사업자_중복제거X": 2201187, "법인사업자_중복제거": 14264, "개인사업자_중복제거": 2375, "총사업자_중복제거": 16639},
-        {"기준월": "24.12", "테이블": "Table 5", "법인사업자_중복제거X": 7630429, "개인사업자_중복제거X": 602364, "총사업자_중복제거X": 8232793, "법인사업자_중복제거": 22344, "개인사업자_중복제거": 5426, "총사업자_중복제거": 27770},
-        {"기준월": "24.12", "테이블": "Table 6", "법인사업자_중복제거X": 10104093, "개인사업자_중복제거X": 754963, "총사업자_중복제거X": 10859056, "법인사업자_중복제거": 24004, "개인사업자_중복제거": 7426, "총사업자_중복제거": 31430},
-        {"기준월": "24.12", "테이블": "Table 7", "법인사업자_중복제거X": 5235431, "개인사업자_중복제거X": 276265, "총사업자_중복제거X": 5511696, "법인사업자_중복제거": 12079, "개인사업자_중복제거": 4107, "총사업자_중복제거": 16186},
-        # 25.01
-        {"기준월": "25.01", "테이블": "Table 1", "법인사업자_중복제거X": 103081, "개인사업자_중복제거X": 15928, "총사업자_중복제거X": 119009, "법인사업자_중복제거": 528, "개인사업자_중복제거": 72, "총사업자_중복제거": 600},
-        {"기준월": "25.01", "테이블": "Table 2", "법인사업자_중복제거X": 248296, "개인사업자_중복제거X": 30404, "총사업자_중복제거X": 278700, "법인사업자_중복제거": 816, "개인사업자_중복제거": 84, "총사업자_중복제거": 900},
-        {"기준월": "25.01", "테이블": "Table 3", "법인사업자_중복제거X": 107553, "개인사업자_중복제거X": 14135, "총사업자_중복제거X": 121688, "법인사업자_중복제거": 913, "개인사업자_중복제거": 46, "총사업자_중복제거": 959},
-        {"기준월": "25.01", "테이블": "Table 4", "법인사업자_중복제거X": 154080, "개인사업자_중복제거X": 18272, "총사업자_중복제거X": 172352, "법인사업자_중복제거": 1065, "개인사업자_중복제거": 74, "총사업자_중복제거": 1139},
-        {"기준월": "25.01", "테이블": "Table 5", "법인사업자_중복제거X": 7423403, "개인사업자_중복제거X": 591624, "총사업자_중복제거X": 8015027, "법인사업자_중복제거": 22200, "개인사업자_중복제거": 5416, "총사업자_중복제거": 27616},
-        {"기준월": "25.01", "테이블": "Table 6", "법인사업자_중복제거X": 9785655, "개인사업자_중복제거X": 740705, "총사업자_중복제거X": 10526360, "법인사업자_중복제거": 23863, "개인사업자_중복제거": 7401, "총사업자_중복제거": 31264},
-        {"기준월": "25.01", "테이블": "Table 7", "법인사업자_중복제거X": 1811704, "개인사업자_중복제거X": 295392, "총사업자_중복제거X": 2107096, "법인사업자_중복제거": 13338, "개인사업자_중복제거": 5283, "총사업자_중복제거": 18621},
-        # 25.02
-        {"기준월": "25.02", "테이블": "Table 1", "법인사업자_중복제거X": 3508134, "개인사업자_중복제거X": 347904, "총사업자_중복제거X": 3856038, "법인사업자_중복제거": 15159, "개인사업자_중복제거": 6103, "총사업자_중복제거": 21262},
-        {"기준월": "25.02", "테이블": "Table 2", "법인사업자_중복제거X": 5533971, "개인사업자_중복제거X": 915884, "총사업자_중복제거X": 6449855, "법인사업자_중복제거": 16539, "개인사업자_중복제거": 6894, "총사업자_중복제거": 23433},
-        {"기준월": "25.02", "테이블": "Table 3", "법인사업자_중복제거X": 2396093, "개인사업자_중복제거X": 138274, "총사업자_중복제거X": 2534367, "법인사업자_중복제거": 14381, "개인사업자_중복제거": 2723, "총사업자_중복제거": 17104},
-        {"기준월": "25.02", "테이블": "Table 4", "법인사업자_중복제거X": 2583680, "개인사업자_중복제거X": 235315, "총사업자_중복제거X": 2818995, "법인사업자_중복제거": 16287, "개인사업자_중복제거": 3926, "총사업자_중복제거": 20213},
-        {"기준월": "25.02", "테이블": "Table 5", "법인사업자_중복제거X": 7394947, "개인사업자_중복제거X": 609579, "총사업자_중복제거X": 8004526, "법인사업자_중복제거": 22734, "개인사업자_중복제거": 5560, "총사업자_중복제거": 28294},
-        {"기준월": "25.02", "테이블": "Table 6", "법인사업자_중복제거X": 9661509, "개인사업자_중복제거X": 772712, "총사업자_중복제거X": 10434221, "법인사업자_중복제거": 24408, "개인사업자_중복제거": 7600, "총사업자_중복제거": 32008},
-        {"기준월": "25.02", "테이블": "Table 7", "법인사업자_중복제거X": 6861468, "개인사업자_중복제거X": 689693, "총사업자_중복제거X": 7551161, "법인사업자_중복제거": 16686, "개인사업자_중복제거": 7458, "총사업자_중복제거": 24144},
-        # 25.03_1 (25-04-22)
-        {"기준월": "25.03_1", "테이블": "Table 1", "법인사업자_중복제거X": 6148275, "개인사업자_중복제거X": 464033, "총사업자_중복제거X": 6612308, "법인사업자_중복제거": 11589, "개인사업자_중복제거": 3832, "총사업자_중복제거": 15421},
-        {"기준월": "25.03_1", "테이블": "Table 2", "법인사업자_중복제거X": 9477331, "개인사업자_중복제거X": 1059358, "총사업자_중복제거X": 10536689, "법인사업자_중복제거": 12373, "개인사업자_중복제거": 4168, "총사업자_중복제거": 16541},
-        {"기준월": "25.03_1", "테이블": "Table 3", "법인사업자_중복제거X": 4741765, "개인사업자_중복제거X": 212220, "총사업자_중복제거X": 4953985, "법인사업자_중복제거": 11254, "개인사업자_중복제거": 1751, "총사업자_중복제거": 13005},
-        {"기준월": "25.03_1", "테이블": "Table 4", "법인사업자_중복제거X": 6136283, "개인사업자_중복제거X": 370892, "총사업자_중복제거X": 6507175, "법인사업자_중복제거": 13167, "개인사업자_중복제거": 2527, "총사업자_중복제거": 15694},
-        {"기준월": "25.03_1", "테이블": "Table 5", "법인사업자_중복제거X": 8384477, "개인사업자_중복제거X": 645672, "총사업자_중복제거X": 9030149, "법인사업자_중복제거": 23746, "개인사업자_중복제거": 5681, "총사업자_중복제거": 29427},
-        {"기준월": "25.03_1", "테이블": "Table 6", "법인사업자_중복제거X": 10991974, "개인사업자_중복제거X": 837314, "총사업자_중복제거X": 11829288, "법인사업자_중복제거": 25497, "개인사업자_중복제거": 7731, "총사업자_중복제거": 33228},
-        {"기준월": "25.03_1", "테이블": "Table 7", "법인사업자_중복제거X": 7958064, "개인사업자_중복제거X": 557278, "총사업자_중복제거X": 8515342, "법인사업자_중복제거": 9339, "개인사업자_중복제거": 3283, "총사업자_중복제거": 12622},
-        # 25.03_2 (25-05-14)
-        {"기준월": "25.03_2", "테이블": "Table 1", "법인사업자_중복제거X": 513473, "개인사업자_중복제거X": 29492, "총사업자_중복제거X": 542965, "법인사업자_중복제거": 1306, "개인사업자_중복제거": 250, "총사업자_중복제거": 1556},
-        {"기준월": "25.03_2", "테이블": "Table 2", "법인사업자_중복제거X": 671386, "개인사업자_중복제거X": 58491, "총사업자_중복제거X": 729877, "법인사업자_중복제거": 1764, "개인사업자_중복제거": 382, "총사업자_중복제거": 2146},
-        {"기준월": "25.03_2", "테이블": "Table 3", "법인사업자_중복제거X": 3522663, "개인사업자_중복제거X": 162569, "총사업자_중복제거X": 3685232, "법인사업자_중복제거": 6411, "개인사업자_중복제거": 645, "총사업자_중복제거": 7056},
-        {"기준월": "25.03_2", "테이블": "Table 4", "법인사업자_중복제거X": 4573063, "개인사업자_중복제거X": 301038, "총사업자_중복제거X": 4874101, "법인사업자_중복제거": 9765, "개인사업자_중복제거": 1199, "총사업자_중복제거": 10964},
-        {"기준월": "25.03_2", "테이블": "Table 5", "법인사업자_중복제거X": 0, "개인사업자_중복제거X": 0, "총사업자_중복제거X": 0, "법인사업자_중복제거": 0, "개인사업자_중복제거": 0, "총사업자_중복제거": 0},
-        {"기준월": "25.03_2", "테이블": "Table 6", "법인사업자_중복제거X": 0, "개인사업자_중복제거X": 0, "총사업자_중복제거X": 0, "법인사업자_중복제거": 0, "개인사업자_중복제거": 0, "총사업자_중복제거": 0},
-        {"기준월": "25.03_2", "테이블": "Table 7", "법인사업자_중복제거X": 761152, "개인사업자_중복제거X": 30959, "총사업자_중복제거X": 792111, "법인사업자_중복제거": 1653, "개인사업자_중복제거": 293, "총사업자_중복제거": 1946},
-        # 25.04
-        {"기준월": "25.04", "테이블": "Table 1", "법인사업자_중복제거X": 2633525, "개인사업자_중복제거X": 432582, "총사업자_중복제거X": 3066107, "법인사업자_중복제거": 3773, "개인사업자_중복제거": 1068, "총사업자_중복제거": 4841},
-        {"기준월": "25.04", "테이블": "Table 2", "법인사업자_중복제거X": 4027811, "개인사업자_중복제거X": 617217, "총사업자_중복제거X": 4645028, "법인사업자_중복제거": 4080, "개인사업자_중복제거": 1221, "총사업자_중복제거": 5301},
-        {"기준월": "25.04", "테이블": "Table 3", "법인사업자_중복제거X": 2466029, "개인사업자_중복제거X": 259361, "총사업자_중복제거X": 2725390, "법인사업자_중복제거": 3659, "개인사업자_중복제거": 595, "총사업자_중복제거": 4254},
-        {"기준월": "25.04", "테이블": "Table 4", "법인사업자_중복제거X": 2664950, "개인사업자_중복제거X": 266971, "총사업자_중복제거X": 2931921, "법인사업자_중복제거": 4116, "개인사업자_중복제거": 824, "총사업자_중복제거": 4940},
-        {"기준월": "25.04", "테이블": "Table 5", "법인사업자_중복제거X": 8383199, "개인사업자_중복제거X": 673301, "총사업자_중복제거X": 9056500, "법인사업자_중복제거": 23864, "개인사업자_중복제거": 5794, "총사업자_중복제거": 29658},
-        {"기준월": "25.04", "테이블": "Table 6", "법인사업자_중복제거X": 10748209, "개인사업자_중복제거X": 844130, "총사업자_중복제거X": 11592339, "법인사업자_중복제거": 25591, "개인사업자_중복제거": 7817, "총사업자_중복제거": 33408},
-        {"기준월": "25.04", "테이블": "Table 7", "법인사업자_중복제거X": 4347702, "개인사업자_중복제거X": 413347, "총사업자_중복제거X": 4761049, "법인사업자_중복제거": 6126, "개인사업자_중복제거": 1239, "총사업자_중복제거": 7365},
-        # 25.05
-        {"기준월": "25.05", "테이블": "Table 1", "법인사업자_중복제거X": 8733581, "개인사업자_중복제거X": 235113, "총사업자_중복제거X": 8968694, "법인사업자_중복제거": 19513, "개인사업자_중복제거": 2605, "총사업자_중복제거": 22118},
-        {"기준월": "25.05", "테이블": "Table 2", "법인사업자_중복제거X": 11985693, "개인사업자_중복제거X": 525504, "총사업자_중복제거X": 12511197, "법인사업자_중복제거": 19833, "개인사업자_중복제거": 2764, "총사업자_중복제거": 22597},
-        {"기준월": "25.05", "테이블": "Table 3", "법인사업자_중복제거X": 12238472, "개인사업자_중복제거X": 324298, "총사업자_중복제거X": 12562770, "법인사업자_중복제거": 19027, "개인사업자_중복제거": 2443, "총사업자_중복제거": 21470},
-        {"기준월": "25.05", "테이블": "Table 4", "법인사업자_중복제거X": 13840713, "개인사업자_중복제거X": 599409, "총사업자_중복제거X": 14440122, "법인사업자_중복제거": 20586, "개인사업자_중복제거": 3541, "총사업자_중복제거": 24127},
-        {"기준월": "25.05", "테이블": "Table 5", "법인사업자_중복제거X": 13840713, "개인사업자_중복제거X": 599409, "총사업자_중복제거X": 14440122, "법인사업자_중복제거": 24369, "개인사업자_중복제거": 5805, "총사업자_중복제거": 30174},
-        {"기준월": "25.05", "테이블": "Table 6", "법인사업자_중복제거X": 11353404, "개인사업자_중복제거X": 827213, "총사업자_중복제거X": 12180617, "법인사업자_중복제거": 26138, "개인사업자_중복제거": 7833, "총사업자_중복제거": 33971},
-        {"기준월": "25.05", "테이블": "Table 7", "법인사업자_중복제거X": 11373860, "개인사업자_중복제거X": 219759, "총사업자_중복제거X": 11593619, "법인사업자_중복제거": 19242, "개인사업자_중복제거": 1691, "총사업자_중복제거": 20933},
-        # 25.06
-        {"기준월": "25.06", "테이블": "Table 1", "법인사업자_중복제거X": 1045174, "개인사업자_중복제거X": 34200, "총사업자_중복제거X": 1079374, "법인사업자_중복제거": 1124, "개인사업자_중복제거": 145, "총사업자_중복제거": 1269},
-        {"기준월": "25.06", "테이블": "Table 2", "법인사업자_중복제거X": 1560976, "개인사업자_중복제거X": 77822, "총사업자_중복제거X": 1638798, "법인사업자_중복제거": 1225, "개인사업자_중복제거": 152, "총사업자_중복제거": 1377},
-        {"기준월": "25.06", "테이블": "Table 3", "법인사업자_중복제거X": 958118, "개인사업자_중복제거X": 15369, "총사업자_중복제거X": 973487, "법인사업자_중복제거": 1180, "개인사업자_중복제거": 85, "총사업자_중복제거": 1265},
-        {"기준월": "25.06", "테이블": "Table 4", "법인사업자_중복제거X": 1044656, "개인사업자_중복제거X": 33939, "총사업자_중복제거X": 1078595, "법인사업자_중복제거": 1312, "개인사업자_중복제거": 127, "총사업자_중복제거": 1439},
-        {"기준월": "25.06", "테이블": "Table 5", "법인사업자_중복제거X": 8574683, "개인사업자_중복제거X": 610625, "총사업자_중복제거X": 9185308, "법인사업자_중복제거": 23859, "개인사업자_중복제거": 5516, "총사업자_중복제거": 29375},
-        {"기준월": "25.06", "테이블": "Table 6", "법인사업자_중복제거X": 10981385, "개인사업자_중복제거X": 775012, "총사업자_중복제거X": 11756397, "법인사업자_중복제거": 25633, "개인사업자_중복제거": 7420, "총사업자_중복제거": 33053},
-        {"기준월": "25.06", "테이블": "Table 7", "법인사업자_중복제거X": 2509118, "개인사업자_중복제거X": 94009, "총사업자_중복제거X": 2603127, "법인사업자_중복제거": 5778, "개인사업자_중복제거": 891, "총사업자_중복제거": 6669},
-        # 25.07
-        {"기준월": "25.07", "테이블": "Table 1", "법인사업자_중복제거X": 1256445, "개인사업자_중복제거X": 183517, "총사업자_중복제거X": 1439962, "법인사업자_중복제거": 6197, "개인사업자_중복제거": 2343, "총사업자_중복제거": 8540},
-        {"기준월": "25.07", "테이블": "Table 2", "법인사업자_중복제거X": 3638630, "개인사업자_중복제거X": 686892, "총사업자_중복제거X": 4325522, "법인사업자_중복제거": 10338, "개인사업자_중복제거": 4045, "총사업자_중복제거": 14383},
-        {"기준월": "25.07", "테이블": "Table 3", "법인사업자_중복제거X": 4094381, "개인사업자_중복제거X": 712730, "총사업자_중복제거X": 4807111, "법인사업자_중복제거": 14823, "개인사업자_중복제거": 3359, "총사업자_중복제거": 18182},
-        {"기준월": "25.07", "테이블": "Table 4", "법인사업자_중복제거X": 2596578, "개인사업자_중복제거X": 628201, "총사업자_중복제거X": 3224779, "법인사업자_중복제거": 9979, "개인사업자_중복제거": 2658, "총사업자_중복제거": 12637},
-        {"기준월": "25.07", "테이블": "Table 5", "법인사업자_중복제거X": 8757670, "개인사업자_중복제거X": 661804, "총사업자_중복제거X": 9419474, "법인사업자_중복제거": 23958, "개인사업자_중복제거": 5649, "총사업자_중복제거": 29607},
-        {"기준월": "25.07", "테이블": "Table 6", "법인사업자_중복제거X": 11232576, "개인사업자_중복제거X": 829577, "총사업자_중복제거X": 12062153, "법인사업자_중복제거": 25720, "개인사업자_중복제거": 7611, "총사업자_중복제거": 33331},
-        {"기준월": "25.07", "테이블": "Table 7", "법인사업자_중복제거X": 7774968, "개인사업자_중복제거X": 757353, "총사업자_중복제거X": 8532321, "법인사업자_중복제거": 19184, "개인사업자_중복제거": 7465, "총사업자_중복제거": 26649}
-    ]
-    result_df = pd.DataFrame(data)
-    numeric_cols = result_df.columns[2:]
-    result_df[numeric_cols] = result_df[numeric_cols].fillna(0).astype(int)
-    return result_df
+# 데이터 로드
+data = create_sample_data()
+df = pd.DataFrame(data)
 
-# 천 단위 쉼표 포맷팅 함수
-def format_thousands(x):
-    return f"{x:,.0f}" if isinstance(x, (int, float)) else x
+# 테이블 목록
+tables = df['테이블'].unique()
 
-# 데이터 로드 및 검증
-comparison_df = create_sample_data()
+# 테이블별 데이터 표시
+for table in tables:
+    st.subheader(f"{table}")
+    table_data = df[df['테이블'] == table].copy()
+    
+    # 최대/최소 수치 요약
+    numeric_cols = table_data.select_dtypes(include=np.number).columns
+    summary = table_data[numeric_cols].describe().loc[['max', 'min']].T
+    st.write(f"{table} 요약:")
+    st.write(summary)
+    
+    # 숫자 포맷팅 (천 단위 쉼표)
+    table_data_formatted = table_data.copy()
+    for col in numeric_cols:
+        table_data_formatted[col] = table_data[col].apply(lambda x: f"{x:,}")
+    
+    st.write(table_data_formatted)
 
-# 데이터 검증
-if comparison_df is None or comparison_df.empty or '테이블' not in comparison_df.columns:
-    st.error("데이터 로드에 실패했습니다. 기본 데이터를 사용합니다.")
-    comparison_df = create_sample_data()  # 재시도
-    if comparison_df is None or comparison_df.empty:
-        st.error("기본 데이터도 로드할 수 없습니다. 관리자에게 문의하세요.")
-        st.stop()
+# Plotly 그래프 (한글 폰트 문제 우회)
+st.subheader("월별 사업자 수 변화 (Plotly)")
+fig = px.line(df, x='기준월', y='총사업자_중복제거', color='테이블', 
+              title='월별 총사업자 수 (중복제거)', 
+              labels={'기준월': '기준월', '총사업자_중복제거': '총사업자 수 (중복제거)', '테이블': '유형'})
+fig.update_layout(font=dict(family="Noto Sans KR, sans-serif", size=12))
+st.plotly_chart(fig, use_container_width=True)
 
-# 테이블 목록 생성
-tables = comparison_df['테이블'].unique().tolist()  # NumPy 배열을 리스트로 변환
-if len(tables) == 0:  # 리스트 길이 확인
-    st.warning("테이블 목록이 비어 있습니다. 기본 테이블(Table 1~7)을 사용합니다.")
-    tables = [f"Table {i+1}" for i in range(7)]
+# matplotlib 그래프
+st.subheader("월별 사업자 수 변화 (matplotlib)")
+plt.figure(figsize=(10, 6))
+for table in tables:
+    table_data = df[df['테이블'] == table]
+    plt.plot(table_data['기준월'], table_data['총사업자_중복제거'], marker='o', label=table)
+plt.title('월별 총사업자 수 (중복제거)')
+plt.xlabel('기준월')
+plt.ylabel('총사업자 수 (중복제거)')
+plt.legend(title='유형')
+plt.xticks(rotation=45)
+plt.tight_layout()
+st.pyplot(plt)
 
-# 디버깅: 테이블 목록 출력
-st.write(f"디버깅: 생성된 테이블 목록: {tables}")
+# CSV 다운로드
+csv = df.to_csv(index=False).encode('utf-8')
+st.download_button(
+    label="CSV 다운로드",
+    data=csv,
+    file_name="business_data.csv",
+    mime="text/csv"
+)
 
-# 테이블별 표시
-st.subheader("테이블별 비교 표 (24.10~25.07)")
-tabs = st.tabs(tables)
-
-for i, tab in enumerate(tabs):
-    table_name = tables[i]
-    table_df = comparison_df[comparison_df["테이블"] == table_name].copy()
-
-    with tab:
-        if table_df.empty:
-            st.warning(f"{table_name}에 데이터가 없습니다.")
-            continue
-
-        # 중복제거X 피벗 표
-        st.subheader(f"{table_name} - 전체 행수 기준")
-        non_dedup_melt = table_df.melt(id_vars=["기준월"], value_vars=["법인사업자_중복제거X", "개인사업자_중복제거X", "총사업자_중복제거X"],
-                                       var_name="사업자유형", value_name="수치")
-        non_dedup_pivot = non_dedup_melt.pivot(index="사업자유형", columns="기준월", values="수치")
-        non_dedup_pivot = non_dedup_pivot.reset_index()
-        formatted_non_dedup = non_dedup_pivot.copy()
-        formatted_non_dedup.iloc[:, 1:] = formatted_non_dedup.iloc[:, 1:].applymap(format_thousands)
-
-        # 최대/최소 월 요약 (총사업자 기준)
-        total_non = non_dedup_melt[non_dedup_melt["사업자유형"] == "총사업자_중복제거X"]
-        if not total_non.empty:
-            max_month = total_non.loc[total_non["수치"].idxmax(), "기준월"]
-            max_value = total_non["수치"].max()
-            min_month = total_non.loc[total_non["수치"].idxmin(), "기준월"]
-            min_value = total_non["수치"].min()
-            st.markdown(f"**요약**: 최대 수치: {max_month} ({format_thousands(max_value)}), 최소 수치: {min_month} ({format_thousands(min_value)})")
-            def highlight_max_min(col):
-                styles = [''] * len(col)
-                if col.name in formatted_non_dedup.columns[1:]:
-                    if col.name == max_month:
-                        styles = ['border: 2px solid red' for _ in col]
-                    elif col.name == min_month:
-                        styles = ['border: 2px solid blue' for _ in col]
-                return styles
-            styled_non_dedup = formatted_non_dedup.style.set_properties(
-                subset=formatted_non_dedup.columns[1:],
-                **{'text-align': 'right', 'padding-right': '8px'}
-            ).apply(highlight_max_min, axis=0)
-            def highlight_rows(row):
-                return ['background-color: #f2f2f2' if row.name % 2 == 0 else '' for _ in row]
-            styled_non_dedup = styled_non_dedup.apply(highlight_rows, axis=1)
-        else:
-            st.markdown("**요약**: 데이터 없음")
-            styled_non_dedup = formatted_non_dedup.style.set_properties(
-                subset=formatted_non_dedup.columns[1:],
-                **{'text-align': 'right', 'padding-right': '8px'}
-            ).apply(highlight_rows, axis=1)
-        st.dataframe(styled_non_dedup, use_container_width=True, height=150)
-
-        # 중복제거 피벗 표
-        st.subheader(f"{table_name} - 사업자번호 기준")
-        dedup_melt = table_df.melt(id_vars=["기준월"], value_vars=["법인사업자_중복제거", "개인사업자_중복제거", "총사업자_중복제거"],
-                                   var_name="사업자유형", value_name="수치")
-        dedup_pivot = dedup_melt.pivot(index="사업자유형", columns="기준월", values="수치")
-        dedup_pivot = dedup_pivot.reset_index()
-        formatted_dedup = dedup_pivot.copy()
-        formatted_dedup.iloc[:, 1:] = formatted_dedup.iloc[:, 1:].applymap(format_thousands)
-
-        # 최대/최소 월 요약 (총사업자 기준)
-        total_dedup = dedup_melt[dedup_melt["사업자유형"] == "총사업자_중복제거"]
-        if not total_dedup.empty:
-            max_month = total_dedup.loc[total_dedup["수치"].idxmax(), "기준월"]
-            max_value = total_dedup["수치"].max()
-            min_month = total_dedup.loc[total_dedup["수치"].idxmin(), "기준월"]
-            min_value = total_dedup["수치"].min()
-            st.markdown(f"**요약**: 최대 수치: {max_month} ({format_thousands(max_value)}), 최소 수치: {min_month} ({format_thousands(min_value)})")
-            def highlight_max_min(col):
-                styles = [''] * len(col)
-                if col.name in formatted_dedup.columns[1:]:
-                    if col.name == max_month:
-                        styles = ['border: 2px solid red' for _ in col]
-                    elif col.name == min_month:
-                        styles = ['border: 2px solid blue' for _ in col]
-                return styles
-            styled_dedup = formatted_dedup.style.set_properties(
-                subset=formatted_dedup.columns[1:],
-                **{'text-align': 'right', 'padding-right': '8px'}
-            ).apply(highlight_max_min, axis=0)
-            styled_dedup = styled_dedup.apply(highlight_rows, axis=1)
-        else:
-            st.markdown("**요약**: 데이터 없음")
-            styled_dedup = formatted_dedup.style.set_properties(
-                subset=formatted_dedup.columns[1:],
-                **{'text-align': 'right', 'padding-right': '8px'}
-            ).apply(highlight_rows, axis=1)
-        st.dataframe(styled_dedup, use_container_width=True, height=150)
-
-        # 막대 그래프 (중복제거X)
-        st.subheader(f"{table_name} 수치 변화 그래프 (전체 행수 기준)")
-        fig_non, ax_non = plt.subplots(figsize=(16, 6))
-        sns.barplot(data=non_dedup_melt, x="기준월", y="수치", hue="사업자유형", palette="Set2", ax=ax_non)
-        ax_non.set_title(f"{table_name} 월별 사업자 수 변화 (중복제거X)")
-        ax_non.set_ylabel("사업자 수")
-        ax_non.tick_params(axis='x', rotation=45)
-        ax_non.legend(title="유형")
-        st.pyplot(fig_non)
-
-        # 막대 그래프 (중복제거)
-        st.subheader(f"{table_name} 수치 변화 그래프 (사업자번호 기준)")
-        fig_dedup, ax_dedup = plt.subplots(figsize=(16, 6))
-        sns.barplot(data=dedup_melt, x="기준월", y="수치", hue="사업자유형", palette="Set3", ax=ax_dedup)
-        ax_dedup.set_title(f"{table_name} 월별 사업자 수 변화 (중복제거)")
-        ax_dedup.set_ylabel("사업자 수")
-        ax_dedup.tick_params(axis='x', rotation=45)
-        ax_dedup.legend(title="유형")
-        st.pyplot(fig_dedup)
-
-        # 그래프 PNG 다운로드
-        png_buffer_non = io.BytesIO()
-        fig_non.savefig(png_buffer_non, format="png", bbox_inches='tight')
-        st.download_button(label=f"{table_name} 중복제거X 그래프 PNG 다운로드", data=png_buffer_non, file_name=f"{table_name}_non_dedup_graph.png", mime="image/png")
-
-        png_buffer_dedup = io.BytesIO()
-        fig_dedup.savefig(png_buffer_dedup, format="png", bbox_inches='tight')
-        st.download_button(label=f"{table_name} 중복제거 그래프 PNG 다운로드", data=png_buffer_dedup, file_name=f"{table_name}_dedup_graph.png", mime="image/png")
-
-# 전체 CSV 다운로드
-if comparison_df is not None:
-    csv_buffer = io.StringIO()
-    comparison_df.to_csv(csv_buffer, index=False, encoding='utf-8-sig')
-    st.download_button(
-        label="전체 비교 표 CSV 다운로드",
-        data=csv_buffer.getvalue(),
-        file_name="techfin_comparison_24.10_25.07.csv",
-        mime="text/csv"
-    )
-
-
+# PNG 다운로드
+buf = io.BytesIO()
+plt.savefig(buf, format="png")
+buf.seek(0)
+st.download_button(
+    label="그래프 PNG 다운로드",
+    data=buf,
+    file_name="business_graph.png",
+    mime="image/png"
+)
