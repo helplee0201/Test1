@@ -8,26 +8,48 @@ import seaborn as sns
 import matplotlib.font_manager as fm
 import os
 import numpy as np
+import shutil
 
 # Streamlit 페이지 설정: 넓은 레이아웃
 st.set_page_config(layout="wide")
 
-# 한글 폰트 설정 (Streamlit Cloud 전용)
-font_path = '/usr/share/fonts/truetype/noto/NotoSansCJKkr-Regular.otf'  # 기본 폰트 경로
-if os.path.exists(font_path):
-    fm.fontManager.addfont(font_path)  # 폰트 추가
-    plt.rc('font', family='Noto Sans CJK KR')
-    plt.rcParams['axes.unicode_minus'] = False  # 마이너스 기호 깨짐 방지
-else:
-    # 시스템 폰트 탐지
+# matplotlib 폰트 캐시 삭제
+cache_dir = matplotlib.get_cachedir()
+if os.path.exists(cache_dir):
+    shutil.rmtree(cache_dir)
+    st.write(f"디버깅: matplotlib 캐시 디렉토리 {cache_dir} 삭제")
+
+# 한글 폰트 설정
+font_paths = [
+    '/usr/share/fonts/truetype/noto/NotoSansCJKkr-Regular.otf',  # Noto Sans CJK KR
+    '/usr/share/fonts/truetype/noto/NotoSansKR-Regular.otf',     # Noto Sans KR
+    '/usr/share/fonts/truetype/nanum/NanumGothic.ttf'            # NanumGothic
+]
+font_name = None
+for path in font_paths:
+    if os.path.exists(path):
+        fm.fontManager.addfont(path)
+        font_name = fm.FontProperties(fname=path).get_name()
+        plt.rc('font', family=font_name)
+        plt.rcParams['axes.unicode_minus'] = False  # 마이너스 기호 깨짐 방지
+        st.write(f"디버깅: 폰트 {font_name} ({path}) 적용")
+        break
+
+# 폰트 디버깅 정보 출력
+if font_name is None:
     available_fonts = [f.name for f in fm.fontManager.ttflist]
     st.write(f"디버깅: 사용 가능한 폰트 목록: {available_fonts}")
-    if 'Noto Sans' in available_fonts:
-        plt.rc('font', family='Noto Sans')
-        st.warning("Noto Sans CJK KR 폰트를 찾을 수 없습니다. Noto Sans로 대체합니다.")
-    else:
-        plt.rc('font', family='DejaVu Sans')  # 최종 대체 폰트
-        st.warning("Noto Sans CJK KR 폰트를 찾을 수 없습니다. DejaVu Sans를 사용합니다. 한글 표시가 제한될 수 있습니다.")
+    st.warning("한글 폰트를 찾을 수 없습니다. 기본 폰트(DejaVu Sans)를 사용합니다. 한글 표시가 제한될 수 있습니다.")
+    plt.rc('font', family='DejaVu Sans')
+else:
+    st.write(f"디버깅: 선택된 폰트: {font_name}")
+
+# 시스템 폰트 목록 디버깅
+try:
+    font_list = os.popen('fc-list :lang=ko').read().splitlines()
+    st.write(f"디버깅: 시스템 한글 폰트 목록: {font_list[:5]}")  # 상위 5개만 출력
+except:
+    st.write("디버깅: 시스템 폰트 목록(fc-list)을 가져올 수 없습니다.")
 
 # Streamlit 앱 설정
 st.title("신한은행 테크핀 데이터 비교 (24.10~25.07)")
@@ -310,3 +332,4 @@ if comparison_df is not None:
         file_name="techfin_comparison_24.10_25.07.csv",
         mime="text/csv"
     )
+
