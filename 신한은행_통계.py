@@ -111,7 +111,7 @@ if uploaded_file is not None:
         return f"{x:,.0f}" if isinstance(x, (int, float)) else x
 
     # 테이블별 탭으로 구분
-    st.subheader("테이블별 비교 표 (24.10~25.06)")
+    st.subheader("테이블별 비교 표 (24.10~25.07)")
     tabs = st.tabs(["Table 1", "Table 2", "Table 3", "Table 4", "Table 5", "Table 6", "Table 7"])
 
     for i, tab in enumerate(tabs):
@@ -198,7 +198,7 @@ if uploaded_file is not None:
             st.dataframe(styled_dedup, use_container_width=True, height=150)
 
             # 막대 그래프 (중복제거X)
-            st.subheader(f"{table_name} 수치 변화 그래프 (중복제거X)")
+            st.subheader(f"{table_name} 수치 변화 그래프 (전체 행수 기준)")
             fig_non, ax_non = plt.subplots(figsize=(16, 6))
             sns.barplot(data=non_dedup_melt, x="기준월", y="수치", hue="사업자유형", palette="Set2", ax=ax_non)
             ax_non.set_title(f"{table_name} 월별 사업자 수 변화 (중복제거X)")
@@ -208,7 +208,7 @@ if uploaded_file is not None:
             st.pyplot(fig_non)
 
             # 막대 그래프 (중복제거)
-            st.subheader(f"{table_name} 수치 변화 그래프 (중복제거)")
+            st.subheader(f"{table_name} 수치 변화 그래프 (사업자번호 기준)")
             fig_dedup, ax_dedup = plt.subplots(figsize=(16, 6))
             sns.barplot(data=dedup_melt, x="기준월", y="수치", hue="사업자유형", palette="Set3", ax=ax_dedup)
             ax_dedup.set_title(f"{table_name} 월별 사업자 수 변화 (중복제거)")
