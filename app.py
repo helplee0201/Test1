@@ -79,7 +79,7 @@ except:
 
 # Streamlit 앱 설정
 st.title("신한은행 테크핀 데이터 비교 (24.10~25.07)")
-st.write("2024.10~2025.07 데이터를 테이블별로 탭으로 나누어 비교합니다. 기준월을 컬럼으로, 중복제거와 중복제거X 데이터를 별도 표로 표시합니다. 숫자는 천 단위 쉼표로 포맷팅해 오른쪽 정렬됩니다.")
+st.write("2024.10~2025.07 데이터를 테이블별로 탭으로 나누어 비교합니다. 기준월을 컬럼으로, 법인/개인사업자의 중복제거와 중복제거X 데이터를 비교합니다. 숫자는 천 단위 쉼표로 포맷팅해 오른쪽 정렬됩니다.")
 
 # CSS로 표 스타일링 (가로 스크롤바 없이 전체 화면 활용, 숫자 오른쪽 정렬)
 st.markdown("""
@@ -122,51 +122,29 @@ for i, table in enumerate(tables):
         st.subheader(f"{table}")
         table_data = df[df['테이블'] == table].copy()
         
-        # 중복제거 피벗 테이블
-        pivot_dedup = table_data.pivot_table(
+        # 피벗 테이블 생성 (법인/개인사업자 중복제거/중복제거X 비교)
+        pivot_table = table_data.pivot_table(
             index=['테이블'], 
             columns='기준월', 
-            values=['법인사업자_중복제거', '개인사업자_중복제거', '총사업자_중복제거'],
+            values=['법인사업자_중복제거', '개인사업자_중복제거', '법인사업자_중복제거X', '개인사업자_중복제거X'],
             aggfunc='sum'
         )
-        pivot_dedup.columns = [f'{col[1]}_{col[0]}' for col in pivot_dedup.columns]
-        pivot_dedup = pivot_dedup.reset_index()
-        
-        # 중복제거X 피벗 테이블
-        pivot_nodedup = table_data.pivot_table(
-            index=['테이블'], 
-            columns='기준월', 
-            values=['법인사업자_중복제거X', '개인사업자_중복제거X', '총사업자_중복제거X'],
-            aggfunc='sum'
-        )
-        pivot_nodedup.columns = [f'{col[1]}_{col[0]}' for col in pivot_nodedup.columns]
-        pivot_nodedup = pivot_nodedup.reset_index()
+        pivot_table.columns = [f'{col[1]}_{col[0]}' for col in pivot_table.columns]
+        pivot_table = pivot_table.reset_index()
         
         # 최대/최소 수치 요약
-        st.write("중복제거 데이터 요약:")
-        numeric_cols_dedup = pivot_dedup.select_dtypes(include=np.number).columns
-        summary_dedup = pivot_dedup[numeric_cols_dedup].describe().loc[['max', 'min']].T
-        st.write(summary_dedup)
-        
-        st.write("중복제거X 데이터 요약:")
-        numeric_cols_nodedup = pivot_nodedup.select_dtypes(include=np.number).columns
-        summary_nodedup = pivot_nodedup[numeric_cols_nodedup].describe().loc[['max', 'min']].T
-        st.write(summary_nodedup)
+        numeric_cols = pivot_table.select_dtypes(include=np.number).columns
+        summary = pivot_table[numeric_cols].describe().loc[['max', 'min']].T
+        st.write(f"{table} 요약 (법인/개인사업자, 중복제거/중복제거X):")
+        st.write(summary)
         
         # 숫자 포맷팅 (천 단위 쉼표)
-        pivot_dedup_formatted = pivot_dedup.copy()
-        for col in numeric_cols_dedup:
-            pivot_dedup_formatted[col] = pivot_dedup[col].apply(lambda x: f"{x:,.0f}" if pd.notnull(x) else "-")
+        pivot_table_formatted = pivot_table.copy()
+        for col in numeric_cols:
+            pivot_table_formatted[col] = pivot_table[col].apply(lambda x: f"{x:,.0f}" if pd.notnull(x) else "-")
         
-        pivot_nodedup_formatted = pivot_nodedup.copy()
-        for col in numeric_cols_nodedup:
-            pivot_nodedup_formatted[col] = pivot_nodedup[col].apply(lambda x: f"{x:,.0f}" if pd.notnull(x) else "-")
-        
-        st.write("중복제거 데이터:")
-        st.write(pivot_dedup_formatted)
-        
-        st.write("중복제거X 데이터:")
-        st.write(pivot_nodedup_formatted)
+        st.write("법인/개인사업자 비교 데이터:")
+        st.write(pivot_table_formatted)
         
         # Plotly 그래프
         st.subheader(f"{table} 월별 사업자 수 변화 (Plotly)")
@@ -230,35 +208,19 @@ st.download_button(
     mime="text/csv"
 )
 
-# 피벗 테이블 CSV 다운로드 (중복제거)
-pivot_dedup_all = pd.concat([df[df['테이블'] == table].pivot_table(
+# 피벗 테이블 CSV 다운로드
+pivot_all = pd.concat([df[df['테이블'] == table].pivot_table(
     index=['테이블'], 
     columns='기준월', 
-    values=['법인사업자_중복제거', '개인사업자_중복제거', '총사업자_중복제거'],
+    values=['법인사업자_중복제거', '개인사업자_중복제거', '법인사업자_중복제거X', '개인사업자_중복제거X'],
     aggfunc='sum'
 ).reset_index() for table in tables])
-pivot_dedup_all.columns = [f'{col[1]}_{col[0]}' if isinstance(col, tuple) else col for col in pivot_dedup_all.columns]
-pivot_dedup_csv = pivot_dedup_all.to_csv(index=False).encode('utf-8')
+pivot_all.columns = [f'{col[1]}_{col[0]}' if isinstance(col, tuple) else col for col in pivot_all.columns]
+pivot_csv = pivot_all.to_csv(index=False).encode('utf-8')
 st.download_button(
-    label="중복제거 피벗 테이블 CSV 다운로드",
-    data=pivot_dedup_csv,
-    file_name="business_pivot_dedup_data.csv",
-    mime="text/csv"
-)
-
-# 피벗 테이블 CSV 다운로드 (중복제거X)
-pivot_nodedup_all = pd.concat([df[df['테이블'] == table].pivot_table(
-    index=['테이블'], 
-    columns='기준월', 
-    values=['법인사업자_중복제거X', '개인사업자_중복제거X', '총사업자_중복제거X'],
-    aggfunc='sum'
-).reset_index() for table in tables])
-pivot_nodedup_all.columns = [f'{col[1]}_{col[0]}' if isinstance(col, tuple) else col for col in pivot_nodedup_all.columns]
-pivot_nodedup_csv = pivot_nodedup_all.to_csv(index=False).encode('utf-8')
-st.download_button(
-    label="중복제거X 피벗 테이블 CSV 다운로드",
-    data=pivot_nodedup_csv,
-    file_name="business_pivot_nodedup_data.csv",
+    label="피벗 테이블 CSV 다운로드",
+    data=pivot_csv,
+    file_name="business_pivot_data.csv",
     mime="text/csv"
 )
 
