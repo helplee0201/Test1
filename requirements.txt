@@ -4,3 +4,5 @@ seaborn
 numpy
 pillow
 matplotlib
+openpyxl
+
