@@ -83,7 +83,7 @@ except:
 
 # Streamlit 앱 설정
 st.title("신한은행 테크핀 데이터 비교 (24.10~25.07)")
-st.write("2024.10~2025.07 데이터를 테이블별로 탭으로 나누어 비교합니다. 기준월을 가로 행(컬럼)으로, 법인/개인/총사업자의 중복제거와 중복제거X 데이터를 별도 표로 표시합니다. 숫자는 천 단위 쉼표로 포맷팅해 오른쪽 정렬됩니다.")
+st.write("2024.10~2025.07 데이터를 테이블별로 탭으로 나누어 비교합니다. 기준월을 가로 행(컬럼)으로, 법인/개인/총사업자의 중복제거와 중복제거X 데이터를 별도 표로 표시합니다. 중복제거 데이터는 막대 그래프로 시각화하며 수치를 표시합니다.")
 
 # CSS로 표 스타일링 (가로 스크롤바 없이 전체 화면 활용, 숫자 오른쪽 정렬)
 st.markdown("""
@@ -147,11 +147,16 @@ for i, table in enumerate(tables):
         ).reset_index(drop=True)
         pivot_dedup.index = ['법인사업자_중복제거', '개인사업자_중복제거', '총사업자_중복제거']
         pivot_dedup.columns = [col[1] if isinstance(col, tuple) else col for col in pivot_dedup.columns]
-    
+        
+        # 중복제거 데이터 요약
+        st.write("중복제거 데이터 요약:")
+        numeric_cols_dedup = pivot_dedup.select_dtypes(include=np.number).columns
+        summary_dedup = pivot_dedup[numeric_cols_dedup].describe().loc[['max', 'min']].T
+        st.write(summary_dedup)
         
         # 숫자 포맷팅 (천 단위 쉼표)
         pivot_nodedup_formatted = pivot_nodedup.copy()
-        for col in numeric_cols_nodedup:
+        for col in pivot_nodedup.select_dtypes(include=np.number).columns:
             pivot_nodedup_formatted[col] = pivot_nodedup[col].apply(lambda x: f"{x:,.0f}" if pd.notnull(x) else "-")
         
         pivot_dedup_formatted = pivot_dedup.copy()
@@ -164,23 +169,30 @@ for i, table in enumerate(tables):
         st.write("중복제거 데이터 (법인/개인/총사업자):")
         st.write(pivot_dedup_formatted)
         
-        # Plotly 그래프
-        st.subheader(f"{table} 월별 사업자 수 변화 (Plotly)")
-        fig = px.line(table_data, x='기준월', y='총사업자_중복제거', 
-                      title=f'{table} 월별 총사업자 수 (중복제거)', 
-                      labels={'기준월': '기준월', '총사업자_중복제거': '총사업자 수 (중복제거)'})
+        # Plotly 막대 그래프 (중복제거 데이터만, 수치 표시)
+        st.subheader(f"{table} 월별 사업자 수 변화 (Plotly, 중복제거)")
+        fig = px.bar(table_data, x='기준월', y='총사업자_중복제거', 
+                     title=f'{table} 월별 총사업자 수 (중복제거)',
+                     labels={'기준월': '기준월', '총사업자_중복제거': '총사업자 수 (중복제거)'},
+                     text='총사업자_중복제거')  # 수치 표시
+        fig.update_traces(textposition='auto')
         fig.update_layout(font=dict(family="Noto Sans KR, sans-serif", size=12))
         st.plotly_chart(fig, use_container_width=True)
         
-        # matplotlib 그래프
-        st.subheader(f"{table} 월별 사업자 수 변화 (matplotlib)")
+        # matplotlib 막대 그래프 (중복제거 데이터만, 수치 표시)
+        st.subheader(f"{table} 월별 사업자 수 변화 (matplotlib, 중복제거)")
         plt.figure(figsize=(10, 6))
-        plt.plot(table_data['기준월'], table_data['총사업자_중복제거'], marker='o', label=table)
+        bars = plt.bar(table_data['기준월'], table_data['총사업자_중복제거'], label=table)
         plt.title(f'{table} 월별 총사업자 수 (중복제거)')
         plt.xlabel('기준월')
         plt.ylabel('총사업자 수 (중복제거)')
         plt.legend(title='유형')
         plt.xticks(rotation=45)
+        # 막대 위에 수치 표시
+        for bar in bars:
+            height = bar.get_height()
+            plt.text(bar.get_x() + bar.get_width()/2., height, f'{int(height):,}', 
+                     ha='center', va='bottom', fontsize=10)
         plt.tight_layout()
         st.pyplot(plt)
         
@@ -195,25 +207,35 @@ for i, table in enumerate(tables):
             mime="image/png"
         )
 
-# 전체 Plotly 그래프 (모든 테이블 비교)
-st.subheader("모든 테이블 월별 사업자 수 변화 (Plotly)")
-fig = px.line(df, x='기준월', y='총사업자_중복제거', color='테이블', 
-              title='월별 총사업자 수 (중복제거)', 
-              labels={'기준월': '기준월', '총사업자_중복제거': '총사업자 수 (중복제거)', '테이블': '유형'})
-fig.update_layout(font=dict(family="Noto Sans KR, sans-serif", size=12))
+# 전체 Plotly 막대 그래프 (모든 테이블 비교)
+st.subheader("모든 테이블 월별 사업자 수 변화 (Plotly, 중복제거)")
+fig = px.bar(df, x='기준월', y='총사업자_중복제거', color='테이블', 
+             title='월별 총사업자 수 (중복제거)', 
+             labels={'기준월': '기준월', '총사업자_중복제거': '총사업자 수 (중복제거)', '테이블': '유형'},
+             text='총사업자_중복제거')
+fig.update_traces(textposition='auto')
+fig.update_layout(font=dict(family="Noto Sans KR, sans-serif", size=12), barmode='group')
 st.plotly_chart(fig, use_container_width=True)
 
-# 전체 matplotlib 그래프
-st.subheader("모든 테이블 월별 사업자 수 변화 (matplotlib)")
-plt.figure(figsize=(10, 6))
-for table in tables:
+# 전체 matplotlib 막대 그래프
+st.subheader("모든 테이블 월별 사업자 수 변화 (matplotlib, 중복제거)")
+plt.figure(figsize=(12, 6))
+bar_width = 0.1
+months = df['기준월'].unique()
+for i, table in enumerate(tables):
     table_data = df[df['테이블'] == table]
-    plt.plot(table_data['기준월'], table_data['총사업자_중복제거'], marker='o', label=table)
+    x = np.arange(len(months)) + i * bar_width
+    bars = plt.bar(x, table_data['총사업자_중복제거'], width=bar_width, label=table)
+    # 막대 위에 수치 표시
+    for bar in bars:
+        height = bar.get_height()
+        plt.text(bar.get_x() + bar.get_width()/2., height, f'{int(height):,}', 
+                 ha='center', va='bottom', fontsize=8)
 plt.title('월별 총사업자 수 (중복제거)')
 plt.xlabel('기준월')
 plt.ylabel('총사업자 수 (중복제거)')
+plt.xticks(np.arange(len(months)) + bar_width * (len(tables)-1) / 2, months, rotation=45)
 plt.legend(title='유형')
-plt.xticks(rotation=45)
 plt.tight_layout()
 st.pyplot(plt)
 
@@ -272,4 +294,3 @@ st.download_button(
     file_name="business_graph_all.png",
     mime="image/png"
 )
-
