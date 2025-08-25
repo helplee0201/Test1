@@ -147,17 +147,7 @@ for i, table in enumerate(tables):
         ).reset_index(drop=True)
         pivot_dedup.index = ['법인사업자_중복제거', '개인사업자_중복제거', '총사업자_중복제거']
         pivot_dedup.columns = [col[1] if isinstance(col, tuple) else col for col in pivot_dedup.columns]
-        
-        # 최대/최소 수치 요약
-        st.write("중복제거X 데이터 요약:")
-        numeric_cols_nodedup = pivot_nodedup.select_dtypes(include=np.number).columns
-        summary_nodedup = pivot_nodedup[numeric_cols_nodedup].describe().loc[['max', 'min']].T
-        st.write(summary_nodedup)
-        
-        st.write("중복제거 데이터 요약:")
-        numeric_cols_dedup = pivot_dedup.select_dtypes(include=np.number).columns
-        summary_dedup = pivot_dedup[numeric_cols_dedup].describe().loc[['max', 'min']].T
-        st.write(summary_dedup)
+    
         
         # 숫자 포맷팅 (천 단위 쉼표)
         pivot_nodedup_formatted = pivot_nodedup.copy()
@@ -282,3 +272,4 @@ st.download_button(
     file_name="business_graph_all.png",
     mime="image/png"
 )
+
