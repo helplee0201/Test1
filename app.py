@@ -79,7 +79,7 @@ except:
 
 # Streamlit 앱 설정
 st.title("신한은행 테크핀 데이터 비교 (24.10~25.07)")
-st.write("2024.10~2025.07 데이터를 테이블별로 비교합니다. 숫자는 천 단위로 쉼표를 넣어 읽기 쉽게, 오른쪽 정렬로 화면에 꽉 차게 표시됩니다. 각 표 위에 최대/최소 수치를 요약해 비교 가능합니다!")
+st.write("2024.10~2025.07 데이터를 테이블별로 비교합니다. 기준월을 컬럼으로, 숫자는 천 단위 쉼표로 포맷팅해 오른쪽 정렬로 표시됩니다. 각 표 위에 최대/최소 수치를 요약합니다!")
 
 # CSS로 표 스타일링 (가로 스크롤바 없이 전체 화면 활용, 숫자 오른쪽 정렬)
 st.markdown("""
@@ -96,12 +96,12 @@ table th, table td {
     text-overflow: ellipsis;
 }
 table th:nth-child(1), table td:nth-child(1) {
-    width: 120px; /* 사업자유형 컬럼 고정 너비 */
+    width: 150px; /* 데이터 항목 컬럼 고정 너비 */
 }
 table th:nth-child(n+2), table td:nth-child(n+2) {
     text-align: right !important;
     padding-right: 8px !important;
-    max-width: 80px; /* 숫자 컬럼 너비 제한 */
+    max-width: 100px; /* 숫자 컬럼 너비 제한 */
 }
 </style>
 """, unsafe_allow_html=True)
@@ -113,23 +113,36 @@ df = pd.DataFrame(data)
 # 테이블 목록
 tables = df['테이블'].unique()
 
-# 테이블별 데이터 표시
+# 테이블별 피벗 테이블 생성 및 표시
 for table in tables:
     st.subheader(f"{table}")
     table_data = df[df['테이블'] == table].copy()
     
+    # 피벗 테이블 생성 (기준월을 컬럼으로)
+    pivot_data = table_data.pivot_table(
+        index=['테이블'], 
+        columns='기준월', 
+        values=['법인사업자_중복제거', '개인사업자_중복제거', '총사업자_중복제거', 
+                '법인사업자_중복제거X', '개인사업자_중복제거X', '총사업자_중복제거X'],
+        aggfunc='sum'
+    )
+    
+    # 멀티인덱스 컬럼을 단일 레벨로 변환
+    pivot_data.columns = [f'{col[1]}_{col[0]}' for col in pivot_data.columns]
+    pivot_data = pivot_data.reset_index()
+    
     # 최대/최소 수치 요약
-    numeric_cols = table_data.select_dtypes(include=np.number).columns
-    summary = table_data[numeric_cols].describe().loc[['max', 'min']].T
-    st.write(f"{table} 요약:")
+    numeric_cols = pivot_data.select_dtypes(include=np.number).columns
+    summary = pivot_data[numeric_cols].describe().loc[['max', 'min']].T
+    st.write(f"{table} 요약 (기준월별):")
     st.write(summary)
     
     # 숫자 포맷팅 (천 단위 쉼표)
-    table_data_formatted = table_data.copy()
+    pivot_data_formatted = pivot_data.copy()
     for col in numeric_cols:
-        table_data_formatted[col] = table_data[col].apply(lambda x: f"{x:,}")
+        pivot_data_formatted[col] = pivot_data[col].apply(lambda x: f"{x:,.0f}" if pd.notnull(x) else "-")
     
-    st.write(table_data_formatted)
+    st.write(pivot_data_formatted)
 
 # Plotly 그래프 (한글 폰트 문제 우회)
 st.subheader("월별 사업자 수 변화 (Plotly)")
@@ -153,12 +166,28 @@ plt.xticks(rotation=45)
 plt.tight_layout()
 st.pyplot(plt)
 
-# CSV 다운로드
+# CSV 다운로드 (원본 데이터)
 csv = df.to_csv(index=False).encode('utf-8')
 st.download_button(
-    label="CSV 다운로드",
+    label="원본 데이터 CSV 다운로드",
     data=csv,
     file_name="business_data.csv",
+    mime="text/csv"
+)
+
+# 피벗 테이블 CSV 다운로드
+pivot_all = pd.concat([df[df['테이블'] == table].pivot_table(
+    index=['테이블'], 
+    columns='기준월', 
+    values=['법인사업자_중복제거', '개인사업자_중복제거', '총사업자_중복제거'],
+    aggfunc='sum'
+).reset_index() for table in tables])
+pivot_all.columns = [f'{col[1]}_{col[0]}' if isinstance(col, tuple) else col for col in pivot_all.columns]
+pivot_csv = pivot_all.to_csv(index=False).encode('utf-8')
+st.download_button(
+    label="피벗 테이블 CSV 다운로드",
+    data=pivot_csv,
+    file_name="business_pivot_data.csv",
     mime="text/csv"
 )
 
