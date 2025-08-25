@@ -148,130 +148,142 @@ def create_sample_data():
     result_df[numeric_cols] = result_df[numeric_cols].fillna(0).astype(int)
     return result_df
 
-# 데이터 로드
+# 데이터 로드 및 검증
 comparison_df = create_sample_data()
 
-# 천 단위 쉼표 포맷팅 함수
-def format_thousands(x):
-    return f"{x:,.0f}" if isinstance(x, (int, float)) else x
+# 데이터 검증
+if comparison_df is None or comparison_df.empty or '테이블' not in comparison_df.columns:
+    st.error("데이터 로드에 실패했습니다. 기본 데이터를 사용합니다.")
+    comparison_df = create_sample_data()  # 재시도
+    if comparison_df is None or comparison_df.empty:
+        st.error("기본 데이터도 로드할 수 없습니다. 관리자에게 문의하세요.")
+        st.stop()
+
+# 테이블 목록 생성
+tables = comparison_df['테이블'].unique()
+if not tables:
+    st.warning("테이블 목록이 비어 있습니다. 기본 테이블(Table 1~7)을 사용합니다.")
+    tables = [f"Table {i+1}" for i in range(7)]
 
 # 테이블별 표시
-if comparison_df is not None:
-    st.subheader("테이블별 비교 표 (24.10~25.07)")
-    tables = comparison_df['테이블'].unique()
-    tabs = st.tabs(tables)
+st.subheader("테이블별 비교 표 (24.10~25.07)")
+tabs = st.tabs(tables)
 
-    for i, tab in enumerate(tabs):
-        table_name = tables[i]
-        table_df = comparison_df[comparison_df["테이블"] == table_name].copy()
+for i, tab in enumerate(tabs):
+    table_name = tables[i]
+    table_df = comparison_df[comparison_df["테이블"] == table_name].copy()
 
-        with tab:
-            # 중복제거X 피벗 표
-            st.subheader(f"{table_name} - 전체 행수 기준")
-            non_dedup_melt = table_df.melt(id_vars=["기준월"], value_vars=["법인사업자_중복제거X", "개인사업자_중복제거X", "총사업자_중복제거X"],
-                                           var_name="사업자유형", value_name="수치")
-            non_dedup_pivot = non_dedup_melt.pivot(index="사업자유형", columns="기준월", values="수치")
-            non_dedup_pivot = non_dedup_pivot.reset_index()
-            formatted_non_dedup = non_dedup_pivot.copy()
-            formatted_non_dedup.iloc[:, 1:] = formatted_non_dedup.iloc[:, 1:].applymap(format_thousands)
+    with tab:
+        if table_df.empty:
+            st.warning(f"{table_name}에 데이터가 없습니다.")
+            continue
 
-            # 최대/최소 월 요약 (총사업자 기준)
-            total_non = non_dedup_melt[non_dedup_melt["사업자유형"] == "총사업자_중복제거X"]
-            if not total_non.empty:
-                max_month = total_non.loc[total_non["수치"].idxmax(), "기준월"]
-                max_value = total_non["수치"].max()
-                min_month = total_non.loc[total_non["수치"].idxmin(), "기준월"]
-                min_value = total_non["수치"].min()
-                st.markdown(f"**요약**: 최대 수치: {max_month} ({format_thousands(max_value)}), 최소 수치: {min_month} ({format_thousands(min_value)})")
-                def highlight_max_min(col):
-                    styles = [''] * len(col)
-                    if col.name in formatted_non_dedup.columns[1:]:
-                        if col.name == max_month:
-                            styles = ['border: 2px solid red' for _ in col]
-                        elif col.name == min_month:
-                            styles = ['border: 2px solid blue' for _ in col]
-                    return styles
-                styled_non_dedup = formatted_non_dedup.style.set_properties(
-                    subset=formatted_non_dedup.columns[1:],
-                    **{'text-align': 'right', 'padding-right': '8px'}
-                ).apply(highlight_max_min, axis=0)
-                def highlight_rows(row):
-                    return ['background-color: #f2f2f2' if row.name % 2 == 0 else '' for _ in row]
-                styled_non_dedup = styled_non_dedup.apply(highlight_rows, axis=1)
-            else:
-                st.markdown("**요약**: 데이터 없음")
-                styled_non_dedup = formatted_non_dedup.style.set_properties(
-                    subset=formatted_non_dedup.columns[1:],
-                    **{'text-align': 'right', 'padding-right': '8px'}
-                ).apply(highlight_rows, axis=1)
-            st.dataframe(styled_non_dedup, use_container_width=True, height=150)
-
-            # 중복제거 피벗 표
-            st.subheader(f"{table_name} - 사업자번호 기준")
-            dedup_melt = table_df.melt(id_vars=["기준월"], value_vars=["법인사업자_중복제거", "개인사업자_중복제거", "총사업자_중복제거"],
+        # 중복제거X 피벗 표
+        st.subheader(f"{table_name} - 전체 행수 기준")
+        non_dedup_melt = table_df.melt(id_vars=["기준월"], value_vars=["법인사업자_중복제거X", "개인사업자_중복제거X", "총사업자_중복제거X"],
                                        var_name="사업자유형", value_name="수치")
-            dedup_pivot = dedup_melt.pivot(index="사업자유형", columns="기준월", values="수치")
-            dedup_pivot = dedup_pivot.reset_index()
-            formatted_dedup = dedup_pivot.copy()
-            formatted_dedup.iloc[:, 1:] = formatted_dedup.iloc[:, 1:].applymap(format_thousands)
+        non_dedup_pivot = non_dedup_melt.pivot(index="사업자유형", columns="기준월", values="수치")
+        non_dedup_pivot = non_dedup_pivot.reset_index()
+        formatted_non_dedup = non_dedup_pivot.copy()
+        formatted_non_dedup.iloc[:, 1:] = formatted_non_dedup.iloc[:, 1:].applymap(lambda x: f"{x:,.0f}" if isinstance(x, (int, float)) else x)
 
-            # 최대/최소 월 요약 (총사업자 기준)
-            total_dedup = dedup_melt[dedup_melt["사업자유형"] == "총사업자_중복제거"]
-            if not total_dedup.empty:
-                max_month = total_dedup.loc[total_dedup["수치"].idxmax(), "기준월"]
-                max_value = total_dedup["수치"].max()
-                min_month = total_dedup.loc[total_dedup["수치"].idxmin(), "기준월"]
-                min_value = total_dedup["수치"].min()
-                st.markdown(f"**요약**: 최대 수치: {max_month} ({format_thousands(max_value)}), 최소 수치: {min_month} ({format_thousands(min_value)})")
-                def highlight_max_min(col):
-                    styles = [''] * len(col)
-                    if col.name in formatted_dedup.columns[1:]:
-                        if col.name == max_month:
-                            styles = ['border: 2px solid red' for _ in col]
-                        elif col.name == min_month:
-                            styles = ['border: 2px solid blue' for _ in col]
-                    return styles
-                styled_dedup = formatted_dedup.style.set_properties(
-                    subset=formatted_dedup.columns[1:],
-                    **{'text-align': 'right', 'padding-right': '8px'}
-                ).apply(highlight_max_min, axis=0)
-                styled_dedup = styled_dedup.apply(highlight_rows, axis=1)
-            else:
-                st.markdown("**요약**: 데이터 없음")
-                styled_dedup = formatted_dedup.style.set_properties(
-                    subset=formatted_dedup.columns[1:],
-                    **{'text-align': 'right', 'padding-right': '8px'}
-                ).apply(highlight_rows, axis=1)
-            st.dataframe(styled_dedup, use_container_width=True, height=150)
+        # 최대/최소 월 요약 (총사업자 기준)
+        total_non = non_dedup_melt[non_dedup_melt["사업자유형"] == "총사업자_중복제거X"]
+        if not total_non.empty:
+            max_month = total_non.loc[total_non["수치"].idxmax(), "기준월"]
+            max_value = total_non["수치"].max()
+            min_month = total_non.loc[total_non["수치"].idxmin(), "기준월"]
+            min_value = total_non["수치"].min()
+            st.markdown(f"**요약**: 최대 수치: {max_month} ({format_thousands(max_value)}), 최소 수치: {min_month} ({format_thousands(min_value)})")
+            def highlight_max_min(col):
+                styles = [''] * len(col)
+                if col.name in formatted_non_dedup.columns[1:]:
+                    if col.name == max_month:
+                        styles = ['border: 2px solid red' for _ in col]
+                    elif col.name == min_month:
+                        styles = ['border: 2px solid blue' for _ in col]
+                return styles
+            styled_non_dedup = formatted_non_dedup.style.set_properties(
+                subset=formatted_non_dedup.columns[1:],
+                **{'text-align': 'right', 'padding-right': '8px'}
+            ).apply(highlight_max_min, axis=0)
+            def highlight_rows(row):
+                return ['background-color: #f2f2f2' if row.name % 2 == 0 else '' for _ in row]
+            styled_non_dedup = styled_non_dedup.apply(highlight_rows, axis=1)
+        else:
+            st.markdown("**요약**: 데이터 없음")
+            styled_non_dedup = formatted_non_dedup.style.set_properties(
+                subset=formatted_non_dedup.columns[1:],
+                **{'text-align': 'right', 'padding-right': '8px'}
+            ).apply(highlight_rows, axis=1)
+        st.dataframe(styled_non_dedup, use_container_width=True, height=150)
 
-            # 막대 그래프 (중복제거X)
-            st.subheader(f"{table_name} 수치 변화 그래프 (전체 행수 기준)")
-            fig_non, ax_non = plt.subplots(figsize=(16, 6))
-            sns.barplot(data=non_dedup_melt, x="기준월", y="수치", hue="사업자유형", palette="Set2", ax=ax_non)
-            ax_non.set_title(f"{table_name} 월별 사업자 수 변화 (중복제거X)")
-            ax_non.set_ylabel("사업자 수")
-            ax_non.tick_params(axis='x', rotation=45)
-            ax_non.legend(title="유형")
-            st.pyplot(fig_non)
+        # 중복제거 피벗 표
+        st.subheader(f"{table_name} - 사업자번호 기준")
+        dedup_melt = table_df.melt(id_vars=["기준월"], value_vars=["법인사업자_중복제거", "개인사업자_중복제거", "총사업자_중복제거"],
+                                   var_name="사업자유형", value_name="수치")
+        dedup_pivot = dedup_melt.pivot(index="사업자유형", columns="기준월", values="수치")
+        dedup_pivot = dedup_pivot.reset_index()
+        formatted_dedup = dedup_pivot.copy()
+        formatted_dedup.iloc[:, 1:] = formatted_dedup.iloc[:, 1:].applymap(lambda x: f"{x:,.0f}" if isinstance(x, (int, float)) else x)
 
-            # 막대 그래프 (중복제거)
-            st.subheader(f"{table_name} 수치 변화 그래프 (사업자번호 기준)")
-            fig_dedup, ax_dedup = plt.subplots(figsize=(16, 6))
-            sns.barplot(data=dedup_melt, x="기준월", y="수치", hue="사업자유형", palette="Set3", ax=ax_dedup)
-            ax_dedup.set_title(f"{table_name} 월별 사업자 수 변화 (중복제거)")
-            ax_dedup.set_ylabel("사업자 수")
-            ax_dedup.tick_params(axis='x', rotation=45)
-            ax_dedup.legend(title="유형")
-            st.pyplot(fig_dedup)
+        # 최대/최소 월 요약 (총사업자 기준)
+        total_dedup = dedup_melt[dedup_melt["사업자유형"] == "총사업자_중복제거"]
+        if not total_dedup.empty:
+            max_month = total_dedup.loc[total_dedup["수치"].idxmax(), "기준월"]
+            max_value = total_dedup["수치"].max()
+            min_month = total_dedup.loc[total_dedup["수치"].idxmin(), "기준월"]
+            min_value = total_dedup["수치"].min()
+            st.markdown(f"**요약**: 최대 수치: {max_month} ({format_thousands(max_value)}), 최소 수치: {min_month} ({format_thousands(min_value)})")
+            def highlight_max_min(col):
+                styles = [''] * len(col)
+                if col.name in formatted_dedup.columns[1:]:
+                    if col.name == max_month:
+                        styles = ['border: 2px solid red' for _ in col]
+                    elif col.name == min_month:
+                        styles = ['border: 2px solid blue' for _ in col]
+                return styles
+            styled_dedup = formatted_dedup.style.set_properties(
+                subset=formatted_dedup.columns[1:],
+                **{'text-align': 'right', 'padding-right': '8px'}
+            ).apply(highlight_max_min, axis=0)
+            styled_dedup = styled_dedup.apply(highlight_rows, axis=1)
+        else:
+            st.markdown("**요약**: 데이터 없음")
+            styled_dedup = formatted_dedup.style.set_properties(
+                subset=formatted_dedup.columns[1:],
+                **{'text-align': 'right', 'padding-right': '8px'}
+            ).apply(highlight_rows, axis=1)
+        st.dataframe(styled_dedup, use_container_width=True, height=150)
 
-            # 그래프 PNG 다운로드
-            png_buffer_non = io.BytesIO()
-            fig_non.savefig(png_buffer_non, format="png", bbox_inches='tight')
-            st.download_button(label=f"{table_name} 중복제거X 그래프 PNG 다운로드", data=png_buffer_non, file_name=f"{table_name}_non_dedup_graph.png", mime="image/png")
+        # 막대 그래프 (중복제거X)
+        st.subheader(f"{table_name} 수치 변화 그래프 (전체 행수 기준)")
+        fig_non, ax_non = plt.subplots(figsize=(16, 6))
+        sns.barplot(data=non_dedup_melt, x="기준월", y="수치", hue="사업자유형", palette="Set2", ax=ax_non)
+        ax_non.set_title(f"{table_name} 월별 사업자 수 변화 (중복제거X)")
+        ax_non.set_ylabel("사업자 수")
+        ax_non.tick_params(axis='x', rotation=45)
+        ax_non.legend(title="유형")
+        st.pyplot(fig_non)
 
-            png_buffer_dedup = io.BytesIO()
-            fig_dedup.savefig(png_buffer_dedup, format="png", bbox_inches='tight')
-            st.download_button(label=f"{table_name} 중복제거 그래프 PNG 다운로드", data=png_buffer_dedup, file_name=f"{table_name}_dedup_graph.png", mime="image/png")
+        # 막대 그래프 (중복제거)
+        st.subheader(f"{table_name} 수치 변화 그래프 (사업자번호 기준)")
+        fig_dedup, ax_dedup = plt.subplots(figsize=(16, 6))
+        sns.barplot(data=dedup_melt, x="기준월", y="수치", hue="사업자유형", palette="Set3", ax=ax_dedup)
+        ax_dedup.set_title(f"{table_name} 월별 사업자 수 변화 (중복제거)")
+        ax_dedup.set_ylabel("사업자 수")
+        ax_dedup.tick_params(axis='x', rotation=45)
+        ax_dedup.legend(title="유형")
+        st.pyplot(fig_dedup)
+
+        # 그래프 PNG 다운로드
+        png_buffer_non = io.BytesIO()
+        fig_non.savefig(png_buffer_non, format="png", bbox_inches='tight')
+        st.download_button(label=f"{table_name} 중복제거X 그래프 PNG 다운로드", data=png_buffer_non, file_name=f"{table_name}_non_dedup_graph.png", mime="image/png")
+
+        png_buffer_dedup = io.BytesIO()
+        fig_dedup.savefig(png_buffer_dedup, format="png", bbox_inches='tight')
+        st.download_button(label=f"{table_name} 중복제거 그래프 PNG 다운로드", data=png_buffer_dedup, file_name=f"{table_name}_dedup_graph.png", mime="image/png")
 
 # 전체 CSV 다운로드
 if comparison_df is not None:
