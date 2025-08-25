@@ -11,24 +11,15 @@ import os
 # Streamlit 페이지 설정: 넓은 레이아웃
 st.set_page_config(layout="wide")
 
-# 한글 폰트 설정 (시스템 폰트 동적 검색)
-def find_korean_font():
-    font_list = fm.findSystemFonts()
-    for font_path in font_list:
-        font_name = fm.FontProperties(fname=font_path).get_name()
-        if font_name in [ 'Noto Sans CJK KR']:
-            return font_path
-    return None
-
-font_path = find_korean_font()
-if font_path:
+# 한글 폰트 설정 (웹 환경 우선)
+font_path = '/usr/share/fonts/truetype/noto/NotoSansCJKkr-Regular.otf'  # Streamlit Cloud
+if os.path.exists(font_path):
     font = fm.FontProperties(fname=font_path)
-    font_name = font.get_name()
-    plt.rc('font', family=font_name)
+    plt.rc('font', family='Noto Sans CJK KR')
     plt.rcParams['axes.unicode_minus'] = False  # 마이너스 기호 깨짐 방지
 else:
-    plt.rc('font', family='DejaVu Sans')  # 웹 환경 기본 폰트
-    st.warning("한글 폰트를 찾을 수 없습니다. DejaVu Sans를 사용합니다. 한글 표시가 제한될 수 있습니다. 'Malgun Gothic' 또는 'NanumGothic'을 설치하세요: https://hangeul.naver.com/font")
+    plt.rc('font', family='DejaVu Sans')  # 기본 폰트 대체
+    st.warning("한글 폰트(Noto Sans CJK KR)를 찾을 수 없습니다. DejaVu Sans를 사용합니다. 한글 표시가 제한될 수 있습니다.")
 
 # Streamlit 앱 설정
 st.title("신한은행 테크핀 데이터 비교 (24.10~25.06)")
@@ -257,4 +248,3 @@ if comparison_df is not None:
         file_name="techfin_comparison_24.10_25.06.csv",
         mime="text/csv"
     )
-
