@@ -1,10 +1,6 @@
 pandas 
 streamlit 
-io
-matplotlib.pyplot 
 seaborn 
-matplotlib.font_manager 
-os
 numpy
 pillow
 matplotlib
