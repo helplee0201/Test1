@@ -13,18 +13,25 @@ import numpy as np
 st.set_page_config(layout="wide")
 
 # 한글 폰트 설정 (Streamlit Cloud 전용)
-font_path = '/usr/share/fonts/truetype/noto/NotoSansCJKkr-Regular.otf'  # Streamlit Cloud 기본 폰트 경로
+font_path = '/usr/share/fonts/truetype/noto/NotoSansCJKkr-Regular.otf'  # 기본 폰트 경로
 if os.path.exists(font_path):
     fm.fontManager.addfont(font_path)  # 폰트 추가
     plt.rc('font', family='Noto Sans CJK KR')
     plt.rcParams['axes.unicode_minus'] = False  # 마이너스 기호 깨짐 방지
 else:
-    plt.rc('font', family='DejaVu Sans')  # 대체 폰트
-    st.warning("Streamlit Cloud에서 Noto Sans CJK KR 폰트를 찾을 수 없습니다. DejaVu Sans를 사용합니다. 한글 표시가 제한될 수 있습니다.")
+    # 시스템 폰트 탐지
+    available_fonts = [f.name for f in fm.fontManager.ttflist]
+    st.write(f"디버깅: 사용 가능한 폰트 목록: {available_fonts}")
+    if 'Noto Sans' in available_fonts:
+        plt.rc('font', family='Noto Sans')
+        st.warning("Noto Sans CJK KR 폰트를 찾을 수 없습니다. Noto Sans로 대체합니다.")
+    else:
+        plt.rc('font', family='DejaVu Sans')  # 최종 대체 폰트
+        st.warning("Noto Sans CJK KR 폰트를 찾을 수 없습니다. DejaVu Sans를 사용합니다. 한글 표시가 제한될 수 있습니다.")
 
 # Streamlit 앱 설정
 st.title("신한은행 테크핀 데이터 비교 (24.10~25.07)")
-st.write("2024.10~2025.07 데이터를 테이블별로 비교합니다. ")
+st.write("2024.10~2025.07 데이터를 테이블별로 비교합니다. 숫자는 천 단위로 쉼표를 넣어 읽기 쉽게, 오른쪽 정렬로 화면에 꽉 차게 표시됩니다. 각 표 위에 최대/최소 수치를 요약해 비교 가능합니다!")
 
 # CSS로 표 스타일링 (가로 스크롤바 없이 전체 화면 활용, 숫자 오른쪽 정렬)
 st.markdown("""
@@ -303,4 +310,3 @@ if comparison_df is not None:
         file_name="techfin_comparison_24.10_25.07.csv",
         mime="text/csv"
     )
-
