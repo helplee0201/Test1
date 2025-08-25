@@ -166,7 +166,7 @@ if comparison_df is None or comparison_df.empty or '테이블' not in comparison
 
 # 테이블 목록 생성
 tables = comparison_df['테이블'].unique().tolist()  # NumPy 배열을 리스트로 변환
-if tables.size == 0:  # NumPy 배열 크기 확인
+if len(tables) == 0:  # 리스트 길이 확인
     st.warning("테이블 목록이 비어 있습니다. 기본 테이블(Table 1~7)을 사용합니다.")
     tables = [f"Table {i+1}" for i in range(7)]
 
