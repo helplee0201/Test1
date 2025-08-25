@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import matplotlib.font_manager as fm
 import os
+import numpy as np
 
 # Streamlit 페이지 설정: 넓은 레이아웃
 st.set_page_config(layout="wide")
@@ -148,6 +149,10 @@ def create_sample_data():
     result_df[numeric_cols] = result_df[numeric_cols].fillna(0).astype(int)
     return result_df
 
+# 천 단위 쉼표 포맷팅 함수
+def format_thousands(x):
+    return f"{x:,.0f}" if isinstance(x, (int, float)) else x
+
 # 데이터 로드 및 검증
 comparison_df = create_sample_data()
 
@@ -160,10 +165,13 @@ if comparison_df is None or comparison_df.empty or '테이블' not in comparison
         st.stop()
 
 # 테이블 목록 생성
-tables = comparison_df['테이블'].unique()
-if not tables:
+tables = comparison_df['테이블'].unique().tolist()  # NumPy 배열을 리스트로 변환
+if tables.size == 0:  # NumPy 배열 크기 확인
     st.warning("테이블 목록이 비어 있습니다. 기본 테이블(Table 1~7)을 사용합니다.")
     tables = [f"Table {i+1}" for i in range(7)]
+
+# 디버깅: 테이블 목록 출력
+st.write(f"디버깅: 생성된 테이블 목록: {tables}")
 
 # 테이블별 표시
 st.subheader("테이블별 비교 표 (24.10~25.07)")
@@ -185,7 +193,7 @@ for i, tab in enumerate(tabs):
         non_dedup_pivot = non_dedup_melt.pivot(index="사업자유형", columns="기준월", values="수치")
         non_dedup_pivot = non_dedup_pivot.reset_index()
         formatted_non_dedup = non_dedup_pivot.copy()
-        formatted_non_dedup.iloc[:, 1:] = formatted_non_dedup.iloc[:, 1:].applymap(lambda x: f"{x:,.0f}" if isinstance(x, (int, float)) else x)
+        formatted_non_dedup.iloc[:, 1:] = formatted_non_dedup.iloc[:, 1:].applymap(format_thousands)
 
         # 최대/최소 월 요약 (총사업자 기준)
         total_non = non_dedup_melt[non_dedup_melt["사업자유형"] == "총사업자_중복제거X"]
@@ -225,7 +233,7 @@ for i, tab in enumerate(tabs):
         dedup_pivot = dedup_melt.pivot(index="사업자유형", columns="기준월", values="수치")
         dedup_pivot = dedup_pivot.reset_index()
         formatted_dedup = dedup_pivot.copy()
-        formatted_dedup.iloc[:, 1:] = formatted_dedup.iloc[:, 1:].applymap(lambda x: f"{x:,.0f}" if isinstance(x, (int, float)) else x)
+        formatted_dedup.iloc[:, 1:] = formatted_dedup.iloc[:, 1:].applymap(format_thousands)
 
         # 최대/최소 월 요약 (총사업자 기준)
         total_dedup = dedup_melt[dedup_melt["사업자유형"] == "총사업자_중복제거"]
