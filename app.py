@@ -16,7 +16,7 @@ def find_korean_font():
     font_list = fm.findSystemFonts()
     for font_path in font_list:
         font_name = fm.FontProperties(fname=font_path).get_name()
-        if font_name in ['Malgun Gothic', 'NanumGothic', 'Noto Sans CJK KR']:
+        if font_name in [ 'Noto Sans CJK KR']:
             return font_path
     return None
 
@@ -257,3 +257,4 @@ if comparison_df is not None:
         file_name="techfin_comparison_24.10_25.06.csv",
         mime="text/csv"
     )
+
