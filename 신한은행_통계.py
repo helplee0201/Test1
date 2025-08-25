@@ -28,8 +28,8 @@ else:
     st.warning("한글 폰트 파일을 찾을 수 없습니다. 'C:/Windows/Fonts/malgun.ttf'를 확인하거나 NanumGothic을 설치하세요.")
 
 # Streamlit 앱 설정
-st.title("신한은행 테크핀 데이터 비교 (24.10~25.06)")
-st.write("엑셀 파일을 업로드하면 2024.10~2025.06 데이터를 테이블별로 구분해 보여줍니다. 숫자는 천 단위로 쉼표를 넣어 읽기 쉽게, 오른쪽 정렬로 화면에 꽉 차게 표시됩니다. 각 표 위에 최대/최소 수치를 요약해 비교 가능합니다!")
+st.title("신한은행 테크핀 데이터 비교 (24.10~25.07)")
+st.write("엑셀 파일을 업로드하면 2024.10~2025.07 데이터를 테이블별로 구분해 보여줍니다. 숫자는 천 단위로 쉼표를 넣어 읽기 쉽게, 오른쪽 정렬로 화면에 꽉 차게 표시됩니다. 각 표 위에 최대/최소 수치를 요약해 비교 가능합니다!")
 
 # CSS로 표 스타일링 (가로 스크롤바 없이 전체 화면 활용, 숫자 오른쪽 정렬)
 st.markdown("""
@@ -62,15 +62,15 @@ uploaded_file = st.file_uploader("엑셀 파일 업로드 (xlsx)", type=["xlsx"]
 if uploaded_file is not None:
     # 엑셀 파일 읽기
     try:
-        df = pd.read_excel(uploaded_file, sheet_name="25년 6월분_테크핀", header=None)
+        df = pd.read_excel(uploaded_file, sheet_name="25년 7월분_테크핀", header=None)
     except Exception as e:
         st.error(f"엑셀 파일 읽기 오류: {e}")
         st.stop()
 
     # 데이터 파싱 함수
     def parse_techfin_data(df):
-        months = ["24.10", "24.11", "24.12", "25.01", "25.02", "25.03", "25.04", "25.05", "25.06"]
-        start_rows = [4, 13, 22, 31, 40, 49, 67, 76, 85]
+        months = ["24.10", "24.11", "24.12", "25.01", "25.02", "25.03", "25.04", "25.05", "25.06", "25.07"]
+        start_rows = [4, 13, 22, 31, 40, 49, 67, 76, 85, 94]
         parsed_data = []
 
         for month, start_row in zip(months, start_rows):
@@ -120,7 +120,7 @@ if uploaded_file is not None:
 
         with tab:
             # 중복제거X 피벗 표
-            st.subheader(f"{table_name} - 중복제거X")
+            st.subheader(f"{table_name} - 전체 행수 기준")
             non_dedup_melt = table_df.melt(id_vars=["기준월"], value_vars=["법인사업자_중복제거X", "개인사업자_중복제거X", "총사업자_중복제거X"],
                                            var_name="사업자유형", value_name="수치")
             non_dedup_pivot = non_dedup_melt.pivot(index="사업자유형", columns="기준월", values="수치")
@@ -160,7 +160,7 @@ if uploaded_file is not None:
             st.dataframe(styled_non_dedup, use_container_width=True, height=150)
 
             # 중복제거 피벗 표
-            st.subheader(f"{table_name} - 중복제거")
+            st.subheader(f"{table_name} - 사업자번호 기준")
             dedup_melt = table_df.melt(id_vars=["기준월"], value_vars=["법인사업자_중복제거", "개인사업자_중복제거", "총사업자_중복제거"],
                                        var_name="사업자유형", value_name="수치")
             dedup_pivot = dedup_melt.pivot(index="사업자유형", columns="기준월", values="수치")
