@@ -44,17 +44,21 @@ for path in font_paths:
 # fc-list로 한글 폰트 동적 탐지 (Linux)
 if font_name is None and os.name != 'nt':
     try:
-        font_list = os.popen('fc-list :lang=ko').read().splitlines()
-        st.write(f"디버깅: fc-list 한글 폰트 목록: {font_list[:10]}")  # 상위 10개 출력
-        for font in font_list:
-            if 'Noto' in font or 'Nanum' in font:
-                font_path = font.split(':')[0].strip()
-                fm.fontManager.addfont(font_path)
-                font_name = fm.FontProperties(fname=font_path).get_name()
-                plt.rc('font', family=font_name)
-                plt.rcParams['axes.unicode_minus'] = False
-                st.write(f"디버깅: fc-list에서 폰트 {font_name} ({font_path}) 적용")
-                break
+        # fc-list 실행 전 fontconfig 설치 확인
+        if os.system('command -v fc-list >/dev/null 2>&1') != 0:
+            st.write("디버깅: fc-list 명령어가 설치되지 않았습니다. fontconfig 설치 필요.")
+        else:
+            font_list = os.popen('fc-list :lang=ko').read().splitlines()
+            st.write(f"디버깅: fc-list 한글 폰트 목록: {font_list[:10]}")  # 상위 10개 출력
+            for font in font_list:
+                if 'Noto' in font or 'Nanum' in font:
+                    font_path = font.split(':')[0].strip()
+                    fm.fontManager.addfont(font_path)
+                    font_name = fm.FontProperties(fname=font_path).get_name()
+                    plt.rc('font', family=font_name)
+                    plt.rcParams['axes.unicode_minus'] = False
+                    st.write(f"디버깅: fc-list에서 폰트 {font_name} ({font_path}) 적용")
+                    break
     except Exception as e:
         st.write(f"디버깅: fc-list 실행 오류: {str(e)}")
 
@@ -110,8 +114,8 @@ table th:nth-child(n+2), table td:nth-child(n+2) {
 data = create_sample_data()
 df = pd.DataFrame(data)
 
-# 테이블 목록
-tables = df['테이블'].unique()
+# 테이블 목록 (NumPy 배열을 리스트로 변환)
+tables = list(df['테이블'].unique())
 
 # Streamlit 탭 생성
 tabs = st.tabs(tables)
