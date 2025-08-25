@@ -4,8 +4,9 @@ import io
 import matplotlib
 matplotlib.use('Agg')  # 비GUI 백엔드 설정 (Streamlit Cloud 호환)
 import matplotlib.pyplot as plt
-import seaborn as sns
 import matplotlib.font_manager as fm
+import seaborn as sns
+import plotly.express as px
 import os
 import numpy as np
 import shutil
@@ -17,13 +18,14 @@ st.set_page_config(layout="wide")
 cache_dir = matplotlib.get_cachedir()
 if os.path.exists(cache_dir):
     shutil.rmtree(cache_dir)
-    st.write(f"디버깅: matplotlib 캐시 디렉토리 {cache_dir} 삭제")
+    st.write(f"디버깅: matplotlib 캐시 디렉토리 {cache_dir} 삭제 완료")
 
 # 한글 폰트 설정
 font_paths = [
     '/usr/share/fonts/truetype/noto/NotoSansCJKkr-Regular.otf',  # Noto Sans CJK KR
     '/usr/share/fonts/truetype/noto/NotoSansKR-Regular.otf',     # Noto Sans KR
-    '/usr/share/fonts/truetype/nanum/NanumGothic.ttf'            # NanumGothic
+    '/usr/share/fonts/truetype/nanum/NanumGothic.ttf',           # NanumGothic
+    '/usr/share/fonts/truetype/nanum/NanumBarunGothic.ttf'       # NanumBarunGothic
 ]
 font_name = None
 for path in font_paths:
@@ -35,21 +37,41 @@ for path in font_paths:
         st.write(f"디버깅: 폰트 {font_name} ({path}) 적용")
         break
 
+# fc-list로 한글 폰트 동적 탐지
+if font_name is None:
+    try:
+        font_list = os.popen('fc-list :lang=ko').read().splitlines()
+        st.write(f"디버깅: fc-list 한글 폰트 목록: {font_list[:10]}")  # 상위 10개 출력
+        for font in font_list:
+            if 'Noto' in font or 'Nanum' in font:
+                font_path = font.split(':')[0].strip()
+                fm.fontManager.addfont(font_path)
+                font_name = fm.FontProperties(fname=font_path).get_name()
+                plt.rc('font', family=font_name)
+                plt.rcParams['axes.unicode_minus'] = False
+                st.write(f"디버깅: fc-list에서 폰트 {font_name} ({font_path}) 적용")
+                break
+    except Exception as e:
+        st.write(f"디버깅: fc-list 실행 오류: {str(e)}")
+
 # 폰트 디버깅 정보 출력
 if font_name is None:
     available_fonts = [f.name for f in fm.fontManager.ttflist]
-    st.write(f"디버깅: 사용 가능한 폰트 목록: {available_fonts}")
+    st.write(f"디버깅: matplotlib 사용 가능 폰트 목록: {available_fonts[:20]}")  # 상위 20개 출력
     st.warning("한글 폰트를 찾을 수 없습니다. 기본 폰트(DejaVu Sans)를 사용합니다. 한글 표시가 제한될 수 있습니다.")
     plt.rc('font', family='DejaVu Sans')
 else:
-    st.write(f"디버깅: 선택된 폰트: {font_name}")
+    st.write(f"디버깅: 최종 선택된 폰트: {font_name}")
 
-# 시스템 폰트 목록 디버깅
+# 시스템 폰트 디렉토리 확인
 try:
-    font_list = os.popen('fc-list :lang=ko').read().splitlines()
-    st.write(f"디버깅: 시스템 한글 폰트 목록: {font_list[:5]}")  # 상위 5개만 출력
+    font_dir = '/usr/share/fonts/truetype/'
+    font_files = []
+    for root, _, files in os.walk(font_dir):
+        font_files.extend([os.path.join(root, f) for f in files if f.endswith(('.ttf', '.otf'))])
+    st.write(f"디버깅: 폰트 디렉토리 {font_dir} 내 파일: {font_files[:5]}")  # 상위 5개 출력
 except:
-    st.write("디버깅: 시스템 폰트 목록(fc-list)을 가져올 수 없습니다.")
+    st.write("디버깅: 폰트 디렉토리 확인 실패")
 
 # Streamlit 앱 설정
 st.title("신한은행 테크핀 데이터 비교 (24.10~25.07)")
@@ -332,4 +354,5 @@ if comparison_df is not None:
         file_name="techfin_comparison_24.10_25.07.csv",
         mime="text/csv"
     )
+
 
