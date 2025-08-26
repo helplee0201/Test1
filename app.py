@@ -9,7 +9,7 @@ st.set_page_config(layout="wide")
 
 # Streamlit 앱 설정
 st.title("신한은행 테크핀 데이터 비교 (24.10~25.07)")
-st.write("2024.10~2025.07 데이터를 테이블별로 탭으로 나누어 비교합니다.")
+st.write("2024.10~2025.07 데이터를 테이블별로 탭으로 나누어 비교합니다. 기준월을 가로 행(컬럼)으로, 법인/개인/총사업자의 중복제거와 중복제거X 데이터를 별도 표로 표시합니다. 숫자는 천 단위 쉼표로 포맷팅해 오른쪽 정렬됩니다. HISTORY 탭은 데이터 전송 및 변동 내역을 표시합니다. 최대값이 포함된 열은 빨간색 테두리, 최소값이 포함된 열은 파란색 테두리로 표시됩니다.")
 
 # CSS로 표 스타일링 (줄 바꿈, 헤더 색상, 최대/최소 강조)
 st.markdown("""
@@ -105,7 +105,7 @@ for i, table in enumerate(tables):
         if table == "HISTORY":
             st.subheader("HISTORY")
             history_df = get_history_data()
-            st.table(history_df.style.set_table_attributes('class="history-table"'))
+            st.table(history_df.style.hide_index().set_table_attributes('class="history-table"'))
         else:
             st.subheader(f"{table}")
             table_data = df[df['테이블'] == table].copy()
