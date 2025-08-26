@@ -77,13 +77,13 @@ except Exception as e:
 
 # 테이블 명칭 매핑
 table_mapping = {
-    'Table1': '월별_매출정보',
-    'Table2': '월별_매입정보',
-    'Table3': '거래처별_매출채권정보',
-    'Table4': '거래처별_매입채무정보',
-    'Table5': '거래처별_매출채권_회수기간',
-    'Table6': '거래처별_매입채무_지급기간',
-    'Table7': '분기별_매출(매입)정보'
+    'Table 1': '월별_매출정보',
+    'Table 2': '월별_매입정보',
+    'Table 3': '거래처별_매출채권정보',
+    'Table 4': '거래처별_매입채무정보',
+    'Table 5': '거래처별_매출채권_회수기간',
+    'Table 6': '거래처별_매입채무_지급기간',
+    'Table 7': '분기별_매출(매입)정보'
 }
 
 # 테이블 목록 (HISTORY를 맨 처음에 배치, 나머지는 매핑된 이름 사용)
@@ -177,4 +177,5 @@ for i, table in enumerate(tables):
             
             st.write("중복제거 데이터 (법인/개인/총사업자):")
             st.markdown(pivot_dedup_formatted.to_html(escape=False), unsafe_allow_html=True)
+
 
