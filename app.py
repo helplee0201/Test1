@@ -40,8 +40,8 @@ table th:nth-child(n+2), table td:nth-child(n+2) {
 data = create_sample_data()
 df = pd.DataFrame(data)
 
-# 테이블 목록 (NumPy 배열을 리스트로 변환)
-tables = ["HISTORY"] + list(df['테이블'].unique()) 
+# 테이블 목록 (HISTORY를 맨 처음에 배치)
+tables = ["HISTORY"] + list(df['테이블'].unique())
 
 # Streamlit 탭 생성
 tabs = st.tabs(tables)
@@ -92,5 +92,4 @@ for i, table in enumerate(tables):
             st.write(pivot_nodedup_formatted)
             
             st.write("중복제거 데이터 (법인/개인/총사업자):")
-            st.write(pivot_dedup_formatted)
-
+            st.table(pivot_dedup_formatted)
