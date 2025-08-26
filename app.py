@@ -12,7 +12,7 @@ except ImportError as e:
 st.set_page_config(layout="wide")
 
 # Streamlit 앱 설정
-st.title("7개 부가세 테이블 신한은행 전송 이력 (24.10~25.07)")
+st.title("7개 부가세 테이블 신한은행 전송 이력 (24.10~)")
 st.write("테크핀-> 신한은행 전송 이력을 테이블별로 탭으로 나누어 비교합니다.")
 
 # CSS로 표 스타일링 (줄 바꿈, 헤더 색상, 최대/최소 강조)
@@ -172,10 +172,11 @@ for i, table in enumerate(tables):
                 pivot_dedup_formatted[col] = pivot_dedup[col].apply(lambda x: x if pd.notnull(x) else np.nan)
             pivot_dedup_formatted = highlight_max_min(pivot_dedup_formatted)
             
-            st.write("중복제거X 데이터 (법인/개인/총사업자):")
+            st.write("중복제거X 데이터 (법인/개인/총사업자): 전체 행수 기준")
             st.markdown(pivot_nodedup_formatted.to_html(escape=False), unsafe_allow_html=True)
             
-            st.write("중복제거 데이터 (법인/개인/총사업자):")
+            st.write("중복제거 데이터 (법인/개인/총사업자): 사업자번호 기준준")
             st.markdown(pivot_dedup_formatted.to_html(escape=False), unsafe_allow_html=True)
+
 
 
