@@ -2,14 +2,18 @@ import pandas as pd
 import streamlit as st
 import numpy as np
 from data import create_sample_data
-from history_data import get_history_data  # HISTORY 데이터 임포트
+try:
+    from history_data import get_history_data  # HISTORY 데이터 임포트
+except ImportError as e:
+    st.error(f"history_data 모듈 임포트 실패: {e}")
+    st.stop()
 
 # Streamlit 페이지 설정: 넓은 레이아웃
 st.set_page_config(layout="wide")
 
 # Streamlit 앱 설정
-st.title("신한은행 테크핀 데이터 비교 (24.10~25.07)")
-st.write("2024.10~2025.07 데이터를 테이블별로 탭으로 나누어 비교합니다. 기준월을 가로 행(컬럼)으로, 법인/개인/총사업자의 중복제거와 중복제거X 데이터를 별도 표로 표시합니다. 숫자는 천 단위 쉼표로 포맷팅해 오른쪽 정렬됩니다. HISTORY 탭은 데이터 전송 및 변동 내역을 표시합니다. 최대값이 포함된 열은 빨간색 테두리, 최소값이 포함된 열은 파란색 테두리로 표시됩니다.")
+st.title("7개 부가세 테이블 신한은행 전송 이력 (24.10~25.07)")
+st.write("2024.10~2025.07 전송 이력을 테이블별로 탭으로 나누어 비교합니다.")
 
 # CSS로 표 스타일링 (줄 바꿈, 헤더 색상, 최대/최소 강조)
 st.markdown("""
@@ -64,8 +68,12 @@ table th:nth-child(n+2), table td:nth-child(n+2) {
 """, unsafe_allow_html=True)
 
 # 데이터 로드
-data = create_sample_data()
-df = pd.DataFrame(data)
+try:
+    data = create_sample_data()
+    df = pd.DataFrame(data)
+except Exception as e:
+    st.error(f"create_sample_data 로드 실패: {e}")
+    st.stop()
 
 # 테이블 목록 (HISTORY를 맨 처음에 배치)
 tables = ["HISTORY"] + list(df['테이블'].unique())
@@ -104,8 +112,16 @@ for i, table in enumerate(tables):
     with tabs[i]:
         if table == "HISTORY":
             st.subheader("HISTORY")
-            history_df = get_history_data()
-            st.dataframe(history_df, hide_index=True, use_container_width=True)
+            try:
+                history_df = get_history_data()
+                if history_df.empty:
+                    st.warning("HISTORY 데이터가 비어 있습니다. history_data.py를 확인하세요.")
+                else:
+                    st.write("HISTORY 데이터 로드 성공:")
+                    st.write(f"행 수: {len(history_df)}, 컬럼: {list(history_df.columns)}")
+                    st.dataframe(history_df, hide_index=True, use_container_width=True)
+            except Exception as e:
+                st.error(f"HISTORY 데이터 로드 실패: {e}")
         else:
             st.subheader(f"{table}")
             table_data = df[df['테이블'] == table].copy()
