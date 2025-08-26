@@ -175,8 +175,9 @@ for i, table in enumerate(tables):
             st.write("중복제거X 데이터 (법인/개인/총사업자): 전체 행수 기준")
             st.markdown(pivot_nodedup_formatted.to_html(escape=False), unsafe_allow_html=True)
             
-            st.write("중복제거 데이터 (법인/개인/총사업자): 사업자번호 기준준")
+            st.write("중복제거 데이터 (법인/개인/총사업자): 사업자번호 기준")
             st.markdown(pivot_dedup_formatted.to_html(escape=False), unsafe_allow_html=True)
+
 
 
 
