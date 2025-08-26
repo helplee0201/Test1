@@ -13,7 +13,7 @@ st.set_page_config(layout="wide")
 
 # Streamlit 앱 설정
 st.title("7개 부가세 테이블 신한은행 전송 이력 (24.10~25.07)")
-st.write("2024.10~2025.07 전송 이력을 테이블별로 탭으로 나누어 비교합니다.")
+st.write("테크핀-> 신한은행 전송 이력을 테이블별로 탭으로 나누어 비교합니다.")
 
 # CSS로 표 스타일링 (줄 바꿈, 헤더 색상, 최대/최소 강조)
 st.markdown("""
@@ -164,3 +164,4 @@ for i, table in enumerate(tables):
             
             st.write("중복제거 데이터 (법인/개인/총사업자):")
             st.markdown(pivot_dedup_formatted.to_html(escape=False), unsafe_allow_html=True)
+
