@@ -9,7 +9,7 @@ st.set_page_config(layout="wide")
 
 # Streamlit 앱 설정
 st.title("신한은행 테크핀 데이터 비교 (24.10~25.07)")
-st.write("2024.10~2025.07 데이터를 테이블별로 탭으로 나누어 비교합니다. 기준월을 가로 행(컬럼)으로, 법인/개인/총사업자의 중복제거와 중복제거X 데이터를 별도 표로 표시합니다. 숫자는 천 단위 쉼표로 포맷팅해 오른쪽 정렬됩니다. HISTORY 탭은 데이터 전송 및 변동 내역을 표시합니다. 최대값은 빨간색 테두리, 최소값은 파란색 테두리로 표시됩니다.")
+st.write("2024.10~2025.07 데이터를 테이블별로 탭으로 나누어 비교합니다.")
 
 # CSS로 표 스타일링 (줄 바꿈, 헤더 색상, 최대/최소 강조)
 st.markdown("""
@@ -46,16 +46,18 @@ table th:nth-child(n+2), table td:nth-child(n+2) {
     width: 300px; /* HISTORY ASIS 너비 */
     text-align: left !important; /* HISTORY ASIS 왼쪽 정렬 */
     white-space: pre-wrap; /* 줄 바꿈 유지 */
+    padding-left: 0 !important; /* 텍스트를 맨 왼쪽으로 */
 }
 .history-table th:nth-child(4), .history-table td:nth-child(4) {
     width: 300px; /* HISTORY TOBE 너비 */
     text-align: left !important; /* HISTORY TOBE 왼쪽 정렬 */
     white-space: pre-wrap; /* 줄 바꿈 유지 */
+    padding-left: 0 !important; /* 텍스트를 맨 왼쪽으로 */
 }
-.max-value {
+.max-column {
     border: 2px solid red !important;
 }
-.min-value {
+.min-column {
     border: 2px solid blue !important;
 }
 </style>
@@ -71,20 +73,30 @@ tables = ["HISTORY"] + list(df['테이블'].unique())
 # Streamlit 탭 생성
 tabs = st.tabs(tables)
 
-# 최대/최소 값을 강조하는 함수
+# 최대/최소 값을 강조하는 함수 (전체 열 강조)
 def highlight_max_min(df):
     df_numeric = df.select_dtypes(include=np.number).copy()
     if df_numeric.empty:
         return df
     max_value = df_numeric.max().max()
     min_value = df_numeric.min().min()
+    max_columns = df_numeric.columns[df_numeric.eq(max_value).any()]
+    min_columns = df_numeric.columns[df_numeric.eq(min_value).any()]
+    
     styled_df = df.copy()
-    for col in df_numeric.columns:
-        styled_df[col] = df[col].apply(
-            lambda x: f'<span class="max-value">{x:,.0f}</span>' if x == max_value else (
-                f'<span class="min-value">{x:,.0f}</span>' if x == min_value else f'{x:,.0f}' if pd.notnull(x) else '-'
+    for col in df.columns:
+        if col in max_columns:
+            styled_df[col] = styled_df[col].apply(
+                lambda x: f'<span class="max-column">{x:,.0f}</span>' if pd.notnull(x) else '<span class="max-column">-</span>'
             )
-        )
+        elif col in min_columns:
+            styled_df[col] = styled_df[col].apply(
+                lambda x: f'<span class="min-column">{x:,.0f}</span>' if pd.notnull(x) else '<span class="min-column">-</span>'
+            )
+        else:
+            styled_df[col] = styled_df[col].apply(
+                lambda x: f'{x:,.0f}' if pd.notnull(x) else '-'
+            )
     return styled_df
 
 # 테이블별 데이터 표시
