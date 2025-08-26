@@ -75,8 +75,19 @@ except Exception as e:
     st.error(f"create_sample_data 로드 실패: {e}")
     st.stop()
 
-# 테이블 목록 (HISTORY를 맨 처음에 배치)
-tables = ["HISTORY"] + list(df['테이블'].unique())
+# 테이블 명칭 매핑
+table_mapping = {
+    'table1': '월별_매출정보',
+    'table2': '월별_매입정보',
+    'table3': '거래처별_매출채권정보',
+    'table4': '거래처별_매입채무정보',
+    'table5': '거래처별_매출채권_회수기간',
+    'table6': '거래처별_매입채무_지급기간',
+    'table7': '분기별_매출(매입)정보'
+}
+
+# 테이블 목록 (HISTORY를 맨 처음에 배치, 나머지는 매핑된 이름 사용)
+tables = ["HISTORY"] + [table_mapping.get(table, table) for table in df['테이블'].unique()]
 
 # Streamlit 탭 생성
 tabs = st.tabs(tables)
@@ -123,8 +134,10 @@ for i, table in enumerate(tables):
             except Exception as e:
                 st.error(f"HISTORY 데이터 로드 실패: {e}")
         else:
+            # 원래 테이블 이름으로 데이터 필터링
+            original_table = next((k for k, v in table_mapping.items() if v == table), table)
             st.subheader(f"{table}")
-            table_data = df[df['테이블'] == table].copy()
+            table_data = df[df['테이블'] == original_table].copy()
             
             # 중복제거X 피벗 테이블
             pivot_nodedup = pd.pivot_table(
@@ -146,7 +159,7 @@ for i, table in enumerate(tables):
                 aggfunc='sum'
             ).reset_index(drop=True)
             pivot_dedup.index = ['법인사업자_중복제거', '개인사업자_중복제거', '총사업자_중복제거']
-            pivot_dedup.columns = [col[1] if isinstance(col, tuple) else col for col in pivot_dedup.columns]
+            pivot_dedup.columns = [col[1] if isinstance(col, tuple) else col for col in pivot_nodedup.columns]
             
             # 숫자 포맷팅 및 최대/최소 강조
             pivot_nodedup_formatted = pivot_nodedup.copy()
@@ -164,4 +177,3 @@ for i, table in enumerate(tables):
             
             st.write("중복제거 데이터 (법인/개인/총사업자):")
             st.markdown(pivot_dedup_formatted.to_html(escape=False), unsafe_allow_html=True)
-
