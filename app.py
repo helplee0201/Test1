@@ -105,7 +105,7 @@ for i, table in enumerate(tables):
         if table == "HISTORY":
             st.subheader("HISTORY")
             history_df = get_history_data()
-            st.table(history_df.style.hide_index().set_table_attributes('class="history-table"'))
+            st.dataframe(history_df, hide_index=True, use_container_width=True)
         else:
             st.subheader(f"{table}")
             table_data = df[df['테이블'] == table].copy()
