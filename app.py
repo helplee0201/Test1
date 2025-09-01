@@ -15,7 +15,7 @@ st.set_page_config(layout="wide")
 st.title("7개 부가세 테이블 신한은행 전송 이력 (24.10~)")
 st.write("테크핀-> 신한은행 전송 이력을 테이블별로 탭으로 나누어 비교합니다.")
 
-# CSS로 표 스타일링 (줄 바꿈, 헤더 색상, 최대/최소 강조)
+# CSS로 표 스타일링 (줄 바꿈, 헤더 색상, 최대/최소 강조, 그리고 diff 강조 추가)
 st.markdown("""
 <style>
 table {
@@ -64,6 +64,17 @@ table th:nth-child(n+2), table td:nth-child(n+2) {
 .min-column {
     border: 2px solid blue !important;
 }
+.positive {
+    color: green !important;
+    font-weight: bold !important;
+}
+.negative {
+    color: red !important;
+    font-weight: bold !important;
+}
+.zero {
+    color: gray !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -104,7 +115,14 @@ def highlight_max_min(df):
    
     styled_df = df.copy()
     for col in df.columns:
-        if col in max_columns:
+        if col.endswith('_diff'):
+            # diff 컬럼에 시각적 강조 적용 (양수: green, 음수: red, 0: gray)
+            styled_df[col] = styled_df[col].apply(
+                lambda x: f'<span class="positive">{x:,.0f}</span>' if x > 0 else 
+                          f'<span class="negative">{x:,.0f}</span>' if x < 0 else 
+                          f'<span class="zero">{x:,.0f}</span>' if pd.notnull(x) else '-'
+            )
+        elif col in max_columns:
             styled_df[col] = styled_df[col].apply(
                 lambda x: f'<span class="max-column">{x:,.0f}</span>' if pd.notnull(x) else '<span class="max-column">-</span>'
             )
@@ -148,23 +166,34 @@ for i, table in enumerate(tables):
             for col in numeric_columns:
                 comparison[f'{col}_diff'] = comparison[f'{col}_new'] - comparison[f'{col}_old']
             
-            # 컬럼 순서 정리
-            ordered_columns = ['법인사업자_중복제거X_old', '법인사업자_중복제거X_new', '법인사업자_중복제거X_diff',
-                              '개인사업자_중복제거X_old', '개인사업자_중복제거X_new', '개인사업자_중복제거X_diff',
-                              '총사업자_중복제거X_old', '총사업자_중복제거X_new', '총사업자_중복제거X_diff',
-                              '법인사업자_중복제거_old', '법인사업자_중복제거_new', '법인사업자_중복제거_diff',
-                              '개인사업자_중복제거_old', '개인사업자_중복제거_new', '개인사업자_중복제거_diff',
-                              '총사업자_중복제거_old', '총사업자_중복제거_new', '총사업자_중복제거_diff']
-            comparison = comparison[ordered_columns]
+            # 중복제거X 관련 컬럼만 추출
+            nodedup_columns = ['법인사업자_중복제거X_old', '법인사업자_중복제거X_new', '법인사업자_중복제거X_diff',
+                               '개인사업자_중복제거X_old', '개인사업자_중복제거X_new', '개인사업자_중복제거X_diff',
+                               '총사업자_중복제거X_old', '총사업자_중복제거X_new', '총사업자_중복제거X_diff']
+            comparison_nodedup = comparison[nodedup_columns]
             
-            # 숫자 포맷팅 및 최대/최소 강조
-            comparison_formatted = comparison.copy()
-            for col in comparison.select_dtypes(include=np.number).columns:
-                comparison_formatted[col] = comparison[col].apply(lambda x: x if pd.notnull(x) else np.nan)
-            comparison_formatted = highlight_max_min(comparison_formatted)
+            # 중복제거 관련 컬럼만 추출
+            dedup_columns = ['법인사업자_중복제거_old', '법인사업자_중복제거_new', '법인사업자_중복제거_diff',
+                             '개인사업자_중복제거_old', '개인사업자_중복제거_new', '개인사업자_중복제거_diff',
+                             '총사업자_중복제거_old', '총사업자_중복제거_new', '총사업자_중복제거_diff']
+            comparison_dedup = comparison[dedup_columns]
             
-            st.write("25.07_1 (기존) vs 25.07_2 (신규) 비교 (차이 = 신규 - 기존)")
-            st.markdown(comparison_formatted.to_html(escape=False), unsafe_allow_html=True)
+            # 숫자 포맷팅 및 최대/최소/차이 강조
+            comparison_nodedup_formatted = comparison_nodedup.copy()
+            for col in comparison_nodedup.select_dtypes(include=np.number).columns:
+                comparison_nodedup_formatted[col] = comparison_nodedup[col].apply(lambda x: x if pd.notnull(x) else np.nan)
+            comparison_nodedup_formatted = highlight_max_min(comparison_nodedup_formatted)
+            
+            comparison_dedup_formatted = comparison_dedup.copy()
+            for col in comparison_dedup.select_dtypes(include=np.number).columns:
+                comparison_dedup_formatted[col] = comparison_dedup[col].apply(lambda x: x if pd.notnull(x) else np.nan)
+            comparison_dedup_formatted = highlight_max_min(comparison_dedup_formatted)
+            
+            st.write("중복제거X 비교 (25.07_1 (기존) vs 25.07_2 (신규) - 차이 = 신규 - 기존)")
+            st.markdown(comparison_nodedup_formatted.to_html(escape=False), unsafe_allow_html=True)
+            
+            st.write("중복제거 비교 (25.07_1 (기존) vs 25.07_2 (신규) - 차이 = 신규 - 기존)")
+            st.markdown(comparison_dedup_formatted.to_html(escape=False), unsafe_allow_html=True)
         else:
             # 원래 테이블 이름으로 데이터 필터링
             original_table = next((k for k, v in table_mapping.items() if v == table), table)
@@ -209,4 +238,3 @@ for i, table in enumerate(tables):
            
             st.write("중복제거 데이터 (법인/개인/총사업자): 사업자번호 기준")
             st.markdown(pivot_dedup_formatted.to_html(escape=False), unsafe_allow_html=True)
-
