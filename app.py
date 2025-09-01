@@ -8,7 +8,7 @@ except ImportError as e:
     st.error(f"history_data 모듈 임포트 실패: {e}")
     st.stop()
 
-from checklist import checklist_tab  # 체크리스트 임포트 추가
+from checklist import get_checklist   # 체크리스트 임포트 추가
 
 # Streamlit 페이지 설정: 넓은 레이아웃
 st.set_page_config(layout="wide")
