@@ -89,19 +89,19 @@ except Exception as e:
     st.error(f"create_sample_data 로드 실패: {e}")
     st.stop()
 
-# 테이블 명칭 매핑
+# 테이블 명칭 매핑 (한국어 이름을 키로, 영어 이름을 값으로 변경)
 table_mapping = {
-    'Table 1': '월별_매출정보',
-    'Table 2': '월별_매입정보',
-    'Table 3': '거래처별_매출채권정보',
-    'Table 4': '거래처별_매입채무정보',
-    'Table 5': '거래처별_매출채권_회수기간',
-    'Table 6': '거래처별_매입채무_지급기간',
-    'Table 7': '분기별_매출(매입)정보'
+    '월별_매출정보': 'Table 1',
+    '월별_매입정보': 'Table 2',
+    '거래처별_매출채권정보': 'Table 3',
+    '거래처별_매입채무정보': 'Table 4',
+    '거래처별_매출채권_회수기간': 'Table 5',
+    '거래처별_매입채무_지급기간': 'Table 6',
+    '분기별_매출(매입)정보': 'Table 7'
 }
 
-# 테이블 목록 (HISTORY와 이슈사항을 맨 처음에 배치, 나머지는 매핑된 이름 사용)
-tables = ["HISTORY", "이슈사항"] + [table_mapping.get(table, table) for table in df['테이블'].unique()]
+# 테이블 목록 (HISTORY와 이슈사항을 맨 처음에 배치, 나머지는 한국어 이름 사용)
+tables = ["HISTORY", "이슈사항"] + list(table_mapping.keys())
 
 # Streamlit 탭 생성
 tabs = st.tabs(tables)
@@ -157,10 +157,16 @@ for i, table in enumerate(tables):
         elif table == "이슈사항":
             st.subheader("25.07_1 vs 25.07_2 비교")
             # 25.07_1과 25.07_2 데이터 필터링
-            df_old = df[df['기준월'] == '25.07_1'].set_index('테이블')
-            df_new = df[df['기준월'] == '25.07_2'].set_index('테이블')
+            df_old = df[df['기준월'] == '25.07_1'].copy()
+            df_new = df[df['기준월'] == '25.07_2'].copy()
             
-            # 데이터 병합
+            # 테이블 이름을 한국어로 매핑
+            df_old['테이블'] = df_old['테이블'].map({v: k for k, v in table_mapping.items()})
+            df_new['테이블'] = df_new['테이블'].map({v: k for k, v in table_mapping.items()})
+            
+            # 데이터 병합 (테이블을 인덱스로 설정)
+            df_old = df_old.set_index('테이블')
+            df_new = df_new.set_index('테이블')
             comparison = df_old.join(df_new, lsuffix='_old', rsuffix='_new')
             
             # 차이 계산
@@ -196,17 +202,21 @@ for i, table in enumerate(tables):
                 comparison_dedup_formatted[col] = comparison_dedup[col].apply(lambda x: x if pd.notnull(x) else np.nan)
             comparison_dedup_formatted = highlight_max_min(comparison_dedup_formatted)
             
+            # 테이블 열 제거하고 인덱스(한국어 테이블 이름)를 표시
             st.write("행수 비교 (25.07_1 (기존) vs 25.07_2 (신규) - 차이 = 신규 - 기존)")
-            st.markdown(comparison_rowcount_formatted.to_html(escape=False), unsafe_allow_html=True)
+            st.markdown(comparison_rowcount_formatted.reset_index().to_html(index=True, escape=False), unsafe_allow_html=True)
             
             st.write("사업자번호 기준 비교 (25.07_1 (기존) vs 25.07_2 (신규) - 차이 = 신규 - 기존)")
-            st.markdown(comparison_dedup_formatted.to_html(escape=False), unsafe_allow_html=True)
+            st.markdown(comparison_dedup_formatted.reset_index().to_html(index=True, escape=False), unsafe_allow_html=True)
         else:
-            # 원래 테이블 이름으로 데이터 필터링
-            original_table = next((k for k, v in table_mapping.items() if v == table), table)
+            # 원래 테이블 이름으로 데이터 필터링 (한국어 이름 사용)
+            original_table = table_mapping.get(table, table)
             st.subheader(f"{table}")
             table_data = df[df['테이블'] == original_table].copy()
            
+            # 한국어 테이블 이름으로 변환
+            table_data['테이블'] = table_data['테이블'].map({v: k for k, v in table_mapping.items()})
+            
             # 행수 (중복제거X) 피벗 테이블
             pivot_rowcount = pd.pivot_table(
                 table_data,
