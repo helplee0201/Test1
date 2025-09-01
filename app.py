@@ -15,7 +15,7 @@ st.set_page_config(layout="wide")
 st.title("7개 부가세 테이블 신한은행 전송 이력 (24.10~)")
 st.write("테크핀-> 신한은행 전송 이력을 테이블별로 탭으로 나누어 비교합니다.")
 
-# CSS로 표 스타일링 (줄 바꿈, 헤더 색상, 최대/최소 강조, 그리고 diff 강조 추가)
+# CSS로 표 스타일링 (줄 바꿈, 헤더 색상, 최대/최소 강조, 그리고 diff 강조 추가, 선 구분 강화)
 st.markdown("""
 <style>
 table {
@@ -28,7 +28,7 @@ table th, table td {
     font-size: 12px;
     overflow: hidden;
     text-overflow: ellipsis;
-    border: 1px solid #ddd;
+    border: 2px solid #333 !important; /* 선 구분 강화: 굵기 2px, 색상 진하게 #333 */
 }
 table th {
     background-color: #e6f3ff !important; /* 연한 파란색 헤더 */
@@ -75,6 +75,9 @@ table th:nth-child(n+2), table td:nth-child(n+2) {
 .zero {
     color: gray !important;
 }
+.diff-column {
+    background-color: #f9f9f9 !important; /* diff 열 배경색으로 구분 */
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -103,7 +106,7 @@ tables = ["HISTORY", "이슈사항"] + [table_mapping.get(table, table) for tabl
 # Streamlit 탭 생성
 tabs = st.tabs(tables)
 
-# 최대/최소 값을 강조하는 함수 (전체 열 강조)
+# 최대/최소 값을 강조하는 함수 (전체 열 강조, diff에 이모지 추가)
 def highlight_max_min(df):
     df_numeric = df.select_dtypes(include=np.number).copy()
     if df_numeric.empty:
@@ -116,11 +119,11 @@ def highlight_max_min(df):
     styled_df = df.copy()
     for col in df.columns:
         if col.endswith('_diff'):
-            # diff 컬럼에 시각적 강조 적용 (양수: green, 음수: red, 0: gray)
+            # diff 컬럼에 시각적 강조 적용 (양수: green ↑, 음수: red ↓, 0: gray -)
             styled_df[col] = styled_df[col].apply(
-                lambda x: f'<span class="positive">{x:,.0f}</span>' if x > 0 else 
-                          f'<span class="negative">{x:,.0f}</span>' if x < 0 else 
-                          f'<span class="zero">{x:,.0f}</span>' if pd.notnull(x) else '-'
+                lambda x: f'<span class="positive diff-column">↑ {x:,.0f}</span>' if x > 0 else 
+                          f'<span class="negative diff-column">↓ {x:,.0f}</span>' if x < 0 else 
+                          f'<span class="zero diff-column">- {x:,.0f}</span>' if pd.notnull(x) else '-'
             )
         elif col in max_columns:
             styled_df[col] = styled_df[col].apply(
