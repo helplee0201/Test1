@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 
 def get_checklist_data():
-    # "체크리스트" 시트 데이터를 기반으로 테이블 생성
+    # "체크리스트" 시트 데이터를 기반으로 리스트 생성
     checklist_data = [
         {"구분": "데이터", "유형": "커버리지", "항목": "테크핀의 평균 커버리지는 50% 내외로 집계되며 전송 이력이 없는 신규 사업자에 대한 제공 비율이 높아질수록 커버리지가 증가하고 있다고 판단함"},
         {"구분": "데이터", "유형": "커버리지", "항목": "1. 신규 사업자에 대한 기장 정보를 제공함"},
@@ -73,34 +73,26 @@ def get_checklist_data():
     if 'checked_counts' not in st.session_state:
         st.session_state.checked_counts = {type_value: 0 for type_value in unique_types}
     
-    # 각 유형별로 테이블 생성
+    # 각 유형별로 항목 및 체크박스 표시
     for type_value in unique_types:
         st.subheader(f"{type_value}")
         
         # 해당 유형의 데이터 필터링
-        type_df = df[df["유형"] == type_value].copy()
-        type_df = type_df[["항목"]]  # "항목" 열만 남김
-        
-        # 체크 열 추가 및 초기화
-        type_df["체크"] = False
+        type_data = df[df["유형"] == type_value]["항목"].tolist()
         
         # 체크박스 상태 관리
         checked_items = []
-        for idx, row in type_df.iterrows():
+        for idx, item in enumerate(type_data):
             key = f"check_{type_value}_{idx}"
-            checked = st.checkbox(row["항목"], key=key, value=st.session_state.get(key, False))
+            checked = st.checkbox(item, key=key, value=st.session_state.get(key, False))
             checked_items.append(checked)
-            st.session_state[key] = checked
+            st.session_state[key] = checked  # 상태 업데이트
         
         # 체크된 항목 수 계산
         checked_count = sum(checked_items)
         st.session_state.checked_counts[type_value] = checked_count
         
-        # 테이블에 체크 상태 반영
-        type_df["체크"] = checked_items
-        
-        # 테이블 표시
-        st.dataframe(type_df, use_container_width=True)
-        
         # 체크된 항목 수 표시
-        st.write(f"체크된 항목 수: {checked_count} / {len(type_df)}")
+        st.write(f"체크된 항목 수: {checked_count} / {len(type_data)}")
+
+    return df
