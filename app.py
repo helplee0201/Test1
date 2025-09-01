@@ -7,8 +7,11 @@ try:
 except ImportError as e:
     st.error(f"history_data 모듈 임포트 실패: {e}")
     st.stop()
-
-from checklist import get_checklist_data   # 체크리스트 임포트 추가
+try:
+    from checklist import get_checklist_data  # 체크리스트 임포트 추가
+except ImportError as e:
+    st.error(f"checklist 모듈 임포트 실패: {e}")
+    st.stop()
 
 # Streamlit 페이지 설정: 넓은 레이아웃
 st.set_page_config(layout="wide")
@@ -91,7 +94,7 @@ except Exception as e:
     st.error(f"create_sample_data 로드 실패: {e}")
     st.stop()
 
-# 테이블 명칭 매핑 (한국어 이름을 키로, 영어 이름을 값으로 변경)
+# 테이블 명칭 매핑 (한국어 이름을 키로, 영어 이름을 값으로)
 table_mapping = {
     '월별_매출정보': 'Table 1',
     '월별_매입정보': 'Table 2',
@@ -102,7 +105,7 @@ table_mapping = {
     '분기별_매출(매입)정보': 'Table 7'
 }
 
-# 테이블 목록 (HISTORY와 체크리스트, 이슈사항을 맨 처음에 배치, 나머지는 한국어 이름 사용)
+# 테이블 목록 (HISTORY, 체크리스트, 이슈사항 순으로 배치, 나머지는 한국어 이름 사용)
 tables = ["HISTORY", "체크리스트", "이슈사항"] + list(table_mapping.keys())
 
 # Streamlit 탭 생성
@@ -157,7 +160,8 @@ for i, table in enumerate(tables):
             except Exception as e:
                 st.error(f"HISTORY 데이터 로드 실패: {e}")
         elif table == "체크리스트":
-            checklist_tab()
+            st.subheader("체크리스트")
+            get_checklist_data()
         elif table == "이슈사항":
             st.subheader("25.07_1 vs 25.07_2 비교")
             # 25.07_1과 25.07_2 데이터 필터링
@@ -231,7 +235,7 @@ for i, table in enumerate(tables):
             ).reset_index(drop=True)
             pivot_rowcount.index = ['법인사업자_행수', '개인사업자_행수', '총사업자_행수']
             pivot_rowcount.columns = [col[1] if isinstance(col, tuple) else col for col in pivot_rowcount.columns]
-           
+            
             # 중복제거 피벗 테이블
             pivot_dedup = pd.pivot_table(
                 table_data,
@@ -242,23 +246,20 @@ for i, table in enumerate(tables):
             ).reset_index(drop=True)
             pivot_dedup.index = ['법인사업자_중복제거', '개인사업자_중복제거', '총사업자_중복제거']
             pivot_dedup.columns = [col[1] if isinstance(col, tuple) else col for col in pivot_dedup.columns]
-           
+            
             # 숫자 포맷팅 및 최대/최소 강조
             pivot_rowcount_formatted = pivot_rowcount.copy()
             for col in pivot_rowcount.select_dtypes(include=np.number).columns:
                 pivot_rowcount_formatted[col] = pivot_rowcount[col].apply(lambda x: x if pd.notnull(x) else np.nan)
             pivot_rowcount_formatted = highlight_max_min(pivot_rowcount_formatted)
-           
+            
             pivot_dedup_formatted = pivot_dedup.copy()
             for col in pivot_dedup.select_dtypes(include=np.number).columns:
                 pivot_dedup_formatted[col] = pivot_dedup[col].apply(lambda x: x if pd.notnull(x) else np.nan)
             pivot_dedup_formatted = highlight_max_min(pivot_dedup_formatted)
-           
+            
             st.write("행수 데이터 (법인/개인/총사업자): 전체 행수 기준")
             st.markdown(pivot_rowcount_formatted.to_html(escape=False), unsafe_allow_html=True)
-           
+            
             st.write("중복제거 데이터 (법인/개인/총사업자): 사업자번호 기준")
             st.markdown(pivot_dedup_formatted.to_html(escape=False), unsafe_allow_html=True)
-            
-with open("app.py", "w") as f:
-    f.write(code)
