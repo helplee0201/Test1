@@ -64,10 +64,15 @@ def get_checklist_data():
     # DataFrame 생성
     df = pd.DataFrame(checklist_data)
     
-    # Streamlit에서 체크리스트 표시
+    # 유형별로 데이터 분리
+    unique_types = df["유형"].unique()
+    
     st.write("데이터 품질 관리 체크리스트")
     
-    # 테이블 표시
-    st.dataframe(df, use_container_width=True)
+    # 각 유형별로 테이블 생성
+    for type_value in unique_types:
+        st.subheader(f"{type_value}")
+        type_df = df[df["유형"] == type_value]
+        st.dataframe(type_df, use_container_width=True)
 
     return df
