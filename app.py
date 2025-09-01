@@ -1,3 +1,4 @@
+code = '''
 import pandas as pd
 import streamlit as st
 import numpy as np
@@ -7,6 +8,8 @@ try:
 except ImportError as e:
     st.error(f"history_data 모듈 임포트 실패: {e}")
     st.stop()
+
+from checklist import checklist_tab  # 체크리스트 임포트 추가
 
 # Streamlit 페이지 설정: 넓은 레이아웃
 st.set_page_config(layout="wide")
@@ -100,8 +103,8 @@ table_mapping = {
     '분기별_매출(매입)정보': 'Table 7'
 }
 
-# 테이블 목록 (HISTORY와 이슈사항을 맨 처음에 배치, 나머지는 한국어 이름 사용)
-tables = ["HISTORY", "이슈사항"] + list(table_mapping.keys())
+# 테이블 목록 (HISTORY와 체크리스트, 이슈사항을 맨 처음에 배치, 나머지는 한국어 이름 사용)
+tables = ["HISTORY", "체크리스트", "이슈사항"] + list(table_mapping.keys())
 
 # Streamlit 탭 생성
 tabs = st.tabs(tables)
@@ -154,6 +157,8 @@ for i, table in enumerate(tables):
                     st.dataframe(history_df, hide_index=True, use_container_width=True)
             except Exception as e:
                 st.error(f"HISTORY 데이터 로드 실패: {e}")
+        elif table == "체크리스트":
+            checklist_tab()
         elif table == "이슈사항":
             st.subheader("25.07_1 vs 25.07_2 비교")
             # 25.07_1과 25.07_2 데이터 필터링
@@ -255,3 +260,7 @@ for i, table in enumerate(tables):
            
             st.write("중복제거 데이터 (법인/개인/총사업자): 사업자번호 기준")
             st.markdown(pivot_dedup_formatted.to_html(escape=False), unsafe_allow_html=True)
+'''
+
+with open("app.py", "w") as f:
+    f.write(code)
