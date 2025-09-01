@@ -94,10 +94,4 @@ def get_checklist_data():
         
         st.dataframe(styled_df, use_container_width=True)
     
-    with col2:
-        st.subheader("checklist.py 코드")
-        with open(__file__, "r", encoding="utf-8") as f:
-            code = f.read()
-        st.code(code, language="python")
-    
     return df
