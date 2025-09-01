@@ -164,18 +164,26 @@ for i, table in enumerate(tables):
             comparison = df_old.join(df_new, lsuffix='_old', rsuffix='_new')
             
             # 차이 계산
-            numeric_columns = ['법인사업자_행수', '개인사업자_행수', '총사업자_행수']
-            for col in ['법인사업자_중복제거X', '개인사업자_중복제거X', '총사업자_중복제거X']:
+            rowcount_columns = ['법인사업자_중복제거X', '개인사업자_중복제거X', '총사업자_중복제거X']
+            dedup_columns = ['법인사업자_중복제거', '개인사업자_중복제거', '총사업자_중복제거']
+            for col in rowcount_columns:
                 comparison[f'{col.replace("_중복제거X", "_행수")}_diff'] = comparison[f'{col}_new'] - comparison[f'{col}_old']
+            for col in dedup_columns:
+                comparison[f'{col.replace("_중복제거", "_사업자번호")}_diff'] = comparison[f'{col}_new'] - comparison[f'{col}_old']
             
             # 행수 관련 컬럼만 추출
-            rowcount_columns = ['법인사업자_중복제거X_old', '법인사업자_중복제거X_new', '법인사업자_행수_diff',
-                                '개인사업자_중복제거X_old', '개인사업자_중복제거X_new', '개인사업자_행수_diff',
-                                '총사업자_중복제거X_old', '총사업자_중복제거X_new', '총사업자_행수_diff']
-            comparison_rowcount = comparison[rowcount_columns]
-            
-            # 컬럼 이름 변경: _중복제거X -> _행수
+            rowcount_comparison_columns = ['법인사업자_중복제거X_old', '법인사업자_중복제거X_new', '법인사업자_행수_diff',
+                                          '개인사업자_중복제거X_old', '개인사업자_중복제거X_new', '개인사업자_행수_diff',
+                                          '총사업자_중복제거X_old', '총사업자_중복제거X_new', '총사업자_행수_diff']
+            comparison_rowcount = comparison[rowcount_comparison_columns]
             comparison_rowcount.columns = [col.replace('_중복제거X', '_행수') for col in comparison_rowcount.columns]
+            
+            # 사업자번호 기준 (중복제거) 관련 컬럼만 추출
+            dedup_comparison_columns = ['법인사업자_중복제거_old', '법인사업자_중복제거_new', '법인사업자_사업자번호_diff',
+                                        '개인사업자_중복제거_old', '개인사업자_중복제거_new', '개인사업자_사업자번호_diff',
+                                        '총사업자_중복제거_old', '총사업자_중복제거_new', '총사업자_사업자번호_diff']
+            comparison_dedup = comparison[dedup_comparison_columns]
+            comparison_dedup.columns = [col.replace('_중복제거', '_사업자번호') for col in comparison_dedup.columns]
             
             # 숫자 포맷팅 및 최대/최소/차이 강조
             comparison_rowcount_formatted = comparison_rowcount.copy()
@@ -183,15 +191,23 @@ for i, table in enumerate(tables):
                 comparison_rowcount_formatted[col] = comparison_rowcount[col].apply(lambda x: x if pd.notnull(x) else np.nan)
             comparison_rowcount_formatted = highlight_max_min(comparison_rowcount_formatted)
             
+            comparison_dedup_formatted = comparison_dedup.copy()
+            for col in comparison_dedup.select_dtypes(include=np.number).columns:
+                comparison_dedup_formatted[col] = comparison_dedup[col].apply(lambda x: x if pd.notnull(x) else np.nan)
+            comparison_dedup_formatted = highlight_max_min(comparison_dedup_formatted)
+            
             st.write("행수 비교 (25.07_1 (기존) vs 25.07_2 (신규) - 차이 = 신규 - 기존)")
             st.markdown(comparison_rowcount_formatted.to_html(escape=False), unsafe_allow_html=True)
+            
+            st.write("사업자번호 기준 비교 (25.07_1 (기존) vs 25.07_2 (신규) - 차이 = 신규 - 기존)")
+            st.markdown(comparison_dedup_formatted.to_html(escape=False), unsafe_allow_html=True)
         else:
             # 원래 테이블 이름으로 데이터 필터링
             original_table = next((k for k, v in table_mapping.items() if v == table), table)
             st.subheader(f"{table}")
             table_data = df[df['테이블'] == original_table].copy()
            
-            # 중복제거X (행수) 피벗 테이블
+            # 행수 (중복제거X) 피벗 테이블
             pivot_rowcount = pd.pivot_table(
                 table_data,
                 values=['법인사업자_중복제거X', '개인사업자_중복제거X', '총사업자_중복제거X'],
