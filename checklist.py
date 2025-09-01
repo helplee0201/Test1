@@ -69,7 +69,9 @@ def get_checklist_data():
     
     st.write("데이터 품질 관리 체크리스트")
     
-    # 세션 상태 초기화 (체크된 항목 수 추적)
+    # 세션 상태 초기화 (체크된 항목 수 및 상태 추적)
+    if 'checked_states' not in st.session_state:
+        st.session_state.checked_states = {}
     if 'checked_counts' not in st.session_state:
         st.session_state.checked_counts = {type_value: 0 for type_value in unique_types}
     
@@ -84,11 +86,14 @@ def get_checklist_data():
         checked_items = []
         for idx, item in enumerate(type_data):
             key = f"check_{type_value}_{idx}"
-            checked = st.checkbox(item, key=key, value=st.session_state.get(key, False))
+            # 초기 상태 가져오기 또는 기본값 False
+            initial_state = st.session_state.checked_states.get(key, False)
+            checked = st.checkbox(item, key=key, value=initial_state)
             checked_items.append(checked)
-            st.session_state[key] = checked  # 상태 업데이트
+            # 상태 업데이트를 나중에 처리하기 위해 임시 저장
+            st.session_state.checked_states[key] = checked
         
-        # 체크된 항목 수 계산
+        # 체크된 항목 수 계산 및 업데이트
         checked_count = sum(checked_items)
         st.session_state.checked_counts[type_value] = checked_count
         
