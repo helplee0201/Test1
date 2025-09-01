@@ -69,10 +69,6 @@ def get_checklist_data():
     
     st.write("데이터 품질 관리 체크리스트")
     
-    # 각 유형별로 테이블 생성
-    for type_value in unique_types:
-        st.subheader(f"{type_value}")
-        type_df = df[df["유형"] == type_value]
-        st.dataframe(type_df, use_container_width=True)
-
-    return df
+    # 세션 상태 초기화 (체크된 항목 수 추적)
+    if 'checked_counts' not in st.session_state:
+        st.session_state.checked_counts = {type_value: 0 for type_value in unique_types}
