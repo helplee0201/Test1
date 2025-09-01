@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 
 def get_checklist_data():
+    # "체크리스트" 시트 데이터를 기반으로 테이블 생성
     checklist_data = [
         {"구분": "데이터", "유형": "커버리지", "내용": "테크핀의 평균 커버리지는 50% 내외로 집계되며 전송 이력이 없는 신규 사업자에 대한 제공 비율이 높아질수록 커버리지가 증가하고 있다고 판단함"},
         {"구분": "데이터", "유형": "커버리지", "내용": "1. 신규 사업자에 대한 기장 정보를 제공함"},
@@ -67,19 +68,11 @@ def get_checklist_data():
     for col in ['구분', '유형']:
         df[col] = df[col].where(df[col] != df[col].shift(), '')
     
-    # 체크박스 추가 (인터랙티브)
-    st.write("데이터 품질 관리 체크리스트")
-    st.write("각 항목을 검토한 후 O/X를 체크하세요:")
-    
     # 두 개의 컬럼으로 레이아웃 구성 (왼쪽: 테이블, 오른쪽: 코드)
     col1, col2 = st.columns([3, 2])  # 3:2 비율로 왼쪽에 테이블, 오른쪽에 코드 표시
     
     with col1:
-        # 체크박스 추가 및 테이블 표시
-        df['체크'] = ''
-        for i in range(len(df)):
-            checked = st.checkbox("", key=f"check_{i}", label_visibility="hidden")
-            df.loc[i, '체크'] = 'O' if checked else 'X'
+        st.write("데이터 품질 관리 체크리스트")
         
         # 스타일링 적용
         def style_merged(val):
@@ -88,15 +81,20 @@ def get_checklist_data():
         styled_df = df.style.map(style_merged, subset=['구분', '유형']).set_properties(**{
             'text-align': 'left',
             'border': '2px solid #333',
-            'padding': '8px'
+            'padding': '8px',
+            'background-color': ['#f9f9f9' if i % 2 == 0 else '#ffffff' for i in range(len(df))],  # 홀짝 행 색상 구분
+            'font-size': '13px',
+            'white-space': 'pre-wrap'  # 내용 줄 바꿈 유지
         }).set_table_styles([
-            {'selector': 'th', 'props': [('background-color', '#e6f3ff'), ('border', '2px solid #333'), ('text-align', 'left')]}
+            {'selector': 'th', 'props': [('background-color', '#e6f3ff'), ('border', '2px solid #333'), ('text-align', 'left'), ('font-weight', 'bold'), ('font-size', '14px')]},
+            {'selector': 'td:nth-child(1)', 'props': [('width', '100px')]},  # 구분 열 너비
+            {'selector': 'td:nth-child(2)', 'props': [('width', '120px')]},  # 유형 열 너비
+            {'selector': 'td:nth-child(3)', 'props': [('width', 'auto')]}     # 내용 열 나머지 공간
         ])
         
         st.dataframe(styled_df, use_container_width=True)
     
     with col2:
-        # checklist.py 코드 표시
         st.subheader("checklist.py 코드")
         with open(__file__, "r", encoding="utf-8") as f:
             code = f.read()
