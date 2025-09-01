@@ -64,23 +64,10 @@ def get_checklist_data():
     # DataFrame 생성
     df = pd.DataFrame(checklist_data)
     
+    # Streamlit에서 체크리스트 표시
     st.write("데이터 품질 관리 체크리스트")
     
-    # 스타일링 적용
-    styled_df = df.style.set_properties(**{
-        'text-align': 'left',
-        'border': '2px solid #333',
-        'padding': '8px',
-        'background-color': ['#f9f9f9' if i % 2 == 0 else '#ffffff' for i in range(len(df))],  # 홀짝 행 색상 구분
-        'font-size': '13px',
-        'white-space': 'pre-wrap'  # 내용 줄 바꿈 유지
-    }).set_table_styles([
-        {'selector': 'th', 'props': [('background-color', '#e6f3ff'), ('border', '2px solid #333'), ('text-align', 'left'), ('font-weight', 'bold'), ('font-size', '14px')]},
-        {'selector': 'td:nth-child(1)', 'props': [('width', '100px')]},  # 구분 열 너비
-        {'selector': 'td:nth-child(2)', 'props': [('width', '120px')]},  # 유형 열 너비
-        {'selector': 'td:nth-child(3)', 'props': [('width', 'auto')]}     # 항목 열 나머지 공간
-    ])
-    
-    st.dataframe(styled_df, use_container_width=True)
-    
+    # 테이블 표시
+    st.dataframe(df, use_container_width=True)
+
     return df
