@@ -72,3 +72,35 @@ def get_checklist_data():
     # 세션 상태 초기화 (체크된 항목 수 추적)
     if 'checked_counts' not in st.session_state:
         st.session_state.checked_counts = {type_value: 0 for type_value in unique_types}
+    
+    # 각 유형별로 테이블 생성
+    for type_value in unique_types:
+        st.subheader(f"{type_value}")
+        
+        # 해당 유형의 데이터 필터링
+        type_df = df[df["유형"] == type_value].copy()
+        type_df = type_df[["항목"]]  # "항목" 열만 남김
+        
+        # 체크 열 추가 및 초기화
+        type_df["체크"] = False
+        
+        # 체크박스 상태 관리
+        checked_items = []
+        for idx, row in type_df.iterrows():
+            key = f"check_{type_value}_{idx}"
+            checked = st.checkbox(row["항목"], key=key, value=st.session_state.get(key, False))
+            checked_items.append(checked)
+            st.session_state[key] = checked
+        
+        # 체크된 항목 수 계산
+        checked_count = sum(checked_items)
+        st.session_state.checked_counts[type_value] = checked_count
+        
+        # 테이블에 체크 상태 반영
+        type_df["체크"] = checked_items
+        
+        # 테이블 표시
+        st.dataframe(type_df, use_container_width=True)
+        
+        # 체크된 항목 수 표시
+        st.write(f"체크된 항목 수: {checked_count} / {len(type_df)}")
